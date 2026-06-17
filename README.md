@@ -219,7 +219,7 @@ Este proyecto está licenciado bajo la MIT License - ver el archivo `LICENSE` pa
 
 ## 👥 Autores
 
-- **Cristopher Rondón Ananos** - Desarrollo inicial
+- **Cristopher Rondón Añaños** - Desarrollo inicial
 
 ## 🙏 Agradecimientos
 
