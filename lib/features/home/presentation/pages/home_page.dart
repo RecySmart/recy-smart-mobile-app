@@ -14,7 +14,6 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // BlocProvider.value — does NOT close the bloc when widget is destroyed
     return BlocProvider.value(
       value: sl<HomeBloc>()..add(HomeLoadEvent()),
       child: const _HomeView(),
@@ -37,8 +36,7 @@ class _HomeView extends StatelessWidget {
           if (state is HomeError) {
             return _ErrorView(
               message: state.message,
-              onRetry: () =>
-                  context.read<HomeBloc>().add(HomeRefreshEvent()),
+              onRetry: () => context.read<HomeBloc>().add(HomeRefreshEvent()),
             );
           }
           if (state is HomeLoaded) {
@@ -138,6 +136,8 @@ class _HomeAppBar extends StatelessWidget {
   }
 }
 
+// ── Balance Card — clickeable banner navigates to /levels ─────────────────────
+
 class _BalanceCard extends StatelessWidget {
   final HomeData data;
   const _BalanceCard({required this.data});
@@ -189,27 +189,37 @@ class _BalanceCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          Container(
-            padding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.card_giftcard_rounded,
-                    color: Colors.white, size: 18),
-                const SizedBox(width: 8),
-                Text(
-                  data.pointsToNextReward > 0
-                      ? 'Just ${data.pointsToNextReward} points away from your next level'
-                      : 'You have rewards ready to redeem!',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.white,
+
+          // ── Clickeable banner → /levels ───────────────────────────────────
+          GestureDetector(
+            onTap: () => context.push(AppRoutes.levels),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white24),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.emoji_events_rounded,
+                      color: Colors.white, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      data.pointsToNextReward > 0
+                          ? 'Just ${data.pointsToNextReward} points away from your next level'
+                          : '¡Has alcanzado el nivel máximo! 🏆',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 4),
+                  const Icon(Icons.chevron_right_rounded,
+                      color: Colors.white70, size: 18),
+                ],
+              ),
             ),
           ),
         ],
@@ -307,9 +317,10 @@ class _StatCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             value,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
+            style: Theme.of(context)
+                .textTheme
+                .headlineSmall
+                ?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 4),
           Text(
@@ -353,7 +364,7 @@ class _RecentActivitySection extends StatelessWidget {
         if (activities.isEmpty)
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: AppColors.surfaceWhite,
               borderRadius: BorderRadius.circular(16),
@@ -373,22 +384,17 @@ class _RecentActivitySection extends StatelessWidget {
           )
         else
           Container(
-            alignment: Alignment.center,
-            width: double.infinity,
             decoration: BoxDecoration(
               color: AppColors.surfaceWhite,
               borderRadius: BorderRadius.circular(16),
             ),
-            child:
-            ListView.separated(
+            child: ListView.separated(
               shrinkWrap: true,
-              padding: EdgeInsets.zero,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: activities.length,
               separatorBuilder: (_, __) =>
               const Divider(height: 1, indent: 16, endIndent: 16),
-              itemBuilder: (_, i) =>
-                  _ActivityTile(activity: activities[i]),
+              itemBuilder: (_, i) => _ActivityTile(activity: activities[i]),
             ),
           ),
       ],
@@ -416,9 +422,7 @@ class _ActivityTile extends StatelessWidget {
           shape: BoxShape.circle,
         ),
         child: Icon(
-          isDeposit
-              ? Icons.check_circle_rounded
-              : Icons.redeem_rounded,
+          isDeposit ? Icons.check_circle_rounded : Icons.redeem_rounded,
           color: isDeposit ? AppColors.primary : AppColors.warning,
           size: 20,
         ),
@@ -436,8 +440,7 @@ class _ActivityTile extends StatelessWidget {
             ? '+${activity.pointsDelta} pts'
             : '-${activity.pointsDelta.abs()} pts',
         style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          color:
-          isDeposit ? AppColors.primary : AppColors.warning,
+          color: isDeposit ? AppColors.primary : AppColors.warning,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -472,8 +475,7 @@ class _ErrorView extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium),
             const SizedBox(height: 24),
-            ElevatedButton(
-                onPressed: onRetry, child: const Text('Retry')),
+            ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
           ],
         ),
       ),

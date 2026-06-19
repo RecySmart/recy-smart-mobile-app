@@ -266,7 +266,7 @@ class _ProfileContent extends StatelessWidget {
                       width: 1, height: 36, color: AppColors.surfaceGrey),
                   _StatItem(
                     value:
-                    '${wallet?.co2Saved.toStringAsFixed(1) ?? '0.0'} kg',
+                    '${wallet?.co2Saved.toStringAsFixed(2) ?? '0.0'} kg',
                     label: 'CO2 AHORRADO',
                   ),
                 ],

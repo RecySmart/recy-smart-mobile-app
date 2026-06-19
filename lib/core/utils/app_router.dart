@@ -17,6 +17,7 @@ import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/profile/presentation/pages/transaction_history_page.dart';
 import '../../features/profile/presentation/pages/edit_profile_page.dart';
 import '../../features/profile/presentation/pages/achievements_page.dart';
+import '../../features/levels/presentation/pages/levels_page.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
 import '../../features/leaderboard/presentation/pages/leaderboard_page.dart';
 import '../widgets/main_scaffold.dart';
@@ -25,7 +26,6 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
 class AppRouter {
-  // Expose navigator key for global navigation (e.g., session expiry)
   static GlobalKey<NavigatorState> get navigatorKey => _rootNavigatorKey;
 
   static GoRouter router(AuthBloc authBloc) => GoRouter(
@@ -117,6 +117,10 @@ class AppRouter {
         builder: (_, __) => const AchievementsPage(),
       ),
       GoRoute(
+        path: AppRoutes.levels,
+        builder: (_, __) => const LevelsPage(),
+      ),
+      GoRoute(
         path: AppRoutes.notifications,
         builder: (_, __) => const NotificationsPage(),
       ),
@@ -145,6 +149,7 @@ class AppRoutes {
   static const transactionHistory = '/profile/history';
   static const editProfile = '/profile/edit';
   static const achievements = '/profile/achievements';
+  static const levels = '/levels';
   static const notifications = '/notifications';
   static const leaderboard = '/leaderboard';
 }

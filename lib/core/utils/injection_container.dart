@@ -9,8 +9,7 @@ import '../../features/auth/domain/usecases/register_usecase.dart';
 import '../network/api_client.dart';
 import 'storage_service.dart';
 
-import '../../features/auth/data/datasources/auth_remote_datasource.dart'
-as auth_ds;
+import '../../features/auth/data/datasources/auth_remote_datasource.dart' as auth_ds;
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
 import '../../features/auth/domain/repositories/auth_repository.dart';
 import '../../features/auth/domain/usecases/login_usecase.dart';
@@ -46,6 +45,12 @@ import '../../features/map/domain/repositories/map_repository.dart';
 import '../../features/map/domain/usecases/get_all_bins_usecase.dart';
 import '../../features/map/presentation/bloc/map_bloc.dart';
 
+import '../../features/levels/data/datasources/levels_remote_datasource.dart';
+import '../../features/levels/data/repositories/levels_repository_impl.dart';
+import '../../features/levels/domain/repositories/levels_repository.dart';
+import '../../features/levels/domain/usecases/get_levels_usecase.dart';
+import '../../features/levels/presentation/bloc/levels_bloc.dart';
+
 final sl = GetIt.instance;
 
 Future<void> initDependencies() async {
@@ -61,7 +66,6 @@ Future<void> initDependencies() async {
     sl.registerLazySingleton<FlutterSecureStorage>(() => secureStorage!);
   }
 
-  // ── Unified Storage ───────────────────────────────────────────────────────
   sl.registerLazySingleton<StorageService>(
         () => StorageService(
       secure: kIsWeb ? null : secureStorage,
@@ -69,7 +73,6 @@ Future<void> initDependencies() async {
     ),
   );
 
-  // ── Core API client ───────────────────────────────────────────────────────
   sl.registerLazySingleton<ApiClient>(
         () => ApiClient(
       secureStorage: kIsWeb ? null : secureStorage,
@@ -88,7 +91,6 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton(() => RegisterUseCase(sl()));
   sl.registerLazySingleton(() => GetProfileUseCase(sl()));
   sl.registerLazySingleton(() => LogoutUseCase(sl()));
-
   sl.registerLazySingleton(
         () => AuthBloc(
       loginUseCase: sl(),
@@ -98,13 +100,10 @@ Future<void> initDependencies() async {
       storageService: sl(),
     ),
   );
-
-  // Wire 401 interceptor → AuthBloc (after both are registered)
+  // Wire 401 → AuthBloc
   sl<ApiClient>().onUnauthorized = () {
     final authBloc = sl<AuthBloc>();
-    if (!authBloc.isClosed) {
-      authBloc.add(AuthSessionExpiredEvent());
-    }
+    if (!authBloc.isClosed) authBloc.add(AuthSessionExpiredEvent());
   };
 
   // ── Home ──────────────────────────────────────────────────────────────────
@@ -169,4 +168,14 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<MapRepository>(() => MapRepositoryImpl(sl()));
   sl.registerLazySingleton(() => GetAllBinsUseCase(sl()));
   sl.registerFactory(() => MapBloc(sl()));
+
+  // ── Levels ────────────────────────────────────────────────────────────────
+  sl.registerLazySingleton<LevelsRemoteDataSource>(
+        () => LevelsRemoteDataSourceImpl(sl()),
+  );
+  sl.registerLazySingleton<LevelsRepository>(
+        () => LevelsRepositoryImpl(sl()),
+  );
+  sl.registerLazySingleton(() => GetLevelsUseCase(sl()));
+  sl.registerFactory(() => LevelsBloc(sl()));
 }
