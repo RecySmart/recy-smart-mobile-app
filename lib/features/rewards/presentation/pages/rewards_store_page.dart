@@ -24,7 +24,13 @@ class RewardsStorePage extends StatelessWidget {
 class _RewardsView extends StatelessWidget {
   const _RewardsView();
 
-  static const _categories = ['All', 'Food & Drink', 'Transport', 'Eco', 'General'];
+  static const _categories = [
+    'All',
+    'Food & Drink',
+    'Transport',
+    'Eco',
+    'General'
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -53,9 +59,8 @@ class _RewardsView extends StatelessWidget {
             SliverToBoxAdapter(
               child: BlocBuilder<RewardsBloc, RewardsState>(
                 builder: (context, state) {
-                  final selected = state is RewardsLoaded
-                      ? state.selectedCategory
-                      : 'All';
+                  final selected =
+                      state is RewardsLoaded ? state.selectedCategory : 'All';
                   return SizedBox(
                     height: 48,
                     child: ListView.separated(
@@ -78,9 +83,8 @@ class _RewardsView extends StatelessWidget {
                             color: isSelected
                                 ? Colors.white
                                 : AppColors.textPrimary,
-                            fontWeight: isSelected
-                                ? FontWeight.w600
-                                : FontWeight.w400,
+                            fontWeight:
+                                isSelected ? FontWeight.w600 : FontWeight.w400,
                           ),
                           side: BorderSide.none,
                           shape: RoundedRectangleBorder(
@@ -113,7 +117,7 @@ class _RewardsView extends StatelessWidget {
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
-                            (_, i) => Padding(
+                        (_, i) => Padding(
                           padding: const EdgeInsets.only(bottom: 16),
                           child: _RewardCard(
                             reward: state.filtered[i],
@@ -155,8 +159,8 @@ class _BalanceHeader extends StatelessWidget {
                   ? state.user.wallet?.currentBalance ?? 0
                   : 0;
               return Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 14),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [AppColors.primary, AppColors.primaryDark],
@@ -168,10 +172,8 @@ class _BalanceHeader extends StatelessWidget {
                     const CircleAvatar(
                       radius: 16,
                       backgroundColor: Colors.white24,
-                      child: Icon(
-                          Icons.account_balance_wallet_outlined,
-                          color: Colors.white,
-                          size: 16),
+                      child: Icon(Icons.account_balance_wallet_outlined,
+                          color: Colors.white, size: 16),
                     ),
                     const SizedBox(width: 12),
                     Column(
@@ -187,9 +189,9 @@ class _BalanceHeader extends StatelessWidget {
                                 .textTheme
                                 .titleLarge
                                 ?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                            )),
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                )),
                       ],
                     ),
                     const Spacer(),
@@ -220,6 +222,7 @@ class _BalanceHeader extends StatelessWidget {
 class _RewardCard extends StatelessWidget {
   final Reward reward;
   final VoidCallback onRedeem;
+
   const _RewardCard({required this.reward, required this.onRedeem});
 
   @override
@@ -244,8 +247,7 @@ class _RewardCard extends StatelessWidget {
             width: double.infinity,
             decoration: const BoxDecoration(
               color: AppColors.surfaceGrey,
-              borderRadius:
-              BorderRadius.vertical(top: Radius.circular(16)),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
             ),
             child: const Center(
               child: Icon(Icons.card_giftcard_rounded,
@@ -262,14 +264,11 @@ class _RewardCard extends StatelessWidget {
                   children: [
                     Text(
                       reward.category.toUpperCase(),
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodySmall
-                          ?.copyWith(
-                        color: AppColors.warning,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1,
-                      ),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.warning,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1,
+                          ),
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -280,13 +279,10 @@ class _RewardCard extends StatelessWidget {
                       ),
                       child: Text(
                         '${reward.costInPoints}',
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodyMedium
-                            ?.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w700,
-                        ),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w700,
+                            ),
                       ),
                     ),
                   ],
@@ -303,13 +299,10 @@ class _RewardCard extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Text(
                       'Only ${reward.remainingStock} left!',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodySmall
-                          ?.copyWith(
-                        color: AppColors.error,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.error,
+                            fontWeight: FontWeight.w500,
+                          ),
                     ),
                   ),
                 BlocBuilder<RewardsBloc, RewardsState>(
@@ -324,15 +317,14 @@ class _RewardCard extends StatelessWidget {
                           backgroundColor: AppColors.secondary,
                         ),
                         onPressed:
-                        reward.isAvailable && !isLoading ? onRedeem : null,
+                            reward.isAvailable && !isLoading ? onRedeem : null,
                         child: isLoading
                             ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white),
-                        )
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white),
+                              )
                             : const Text('Redeem Reward'),
                       ),
                     );

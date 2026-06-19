@@ -21,14 +21,7 @@ class MapRemoteDataSourceImpl implements MapRemoteDataSource {
           .toList();
     } on DioException catch (e) {
       final failure = ApiClient.handleDioError(e);
-      // If endpoint not yet implemented, use mock data
-      if (failure is NotFoundFailure || failure is ServerFailure) {
-        return SmartBinModel.mockBins;
-      }
       throw failure;
-    } catch (_) {
-      // Fallback to mock when backend patch not applied yet
-      return SmartBinModel.mockBins;
     }
   }
 }

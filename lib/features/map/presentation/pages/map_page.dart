@@ -222,7 +222,7 @@ class _FilterChips extends StatelessWidget {
 
   const _FilterChips({required this.selected, required this.onSelected});
 
-  static const _filters = ['Todos', 'Disponibles', 'Aceptan Latas'];
+  static const _filters = ['Todos', 'Disponibles'];
 
   @override
   Widget build(BuildContext context) {

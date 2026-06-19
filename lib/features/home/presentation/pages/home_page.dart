@@ -203,7 +203,7 @@ class _BalanceCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   data.pointsToNextReward > 0
-                      ? 'Just ${data.pointsToNextReward} points away from your next prize'
+                      ? 'Just ${data.pointsToNextReward} points away from your next level'
                       : 'You have rewards ready to redeem!',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Colors.white,
@@ -271,7 +271,7 @@ class _StatsRow extends StatelessWidget {
           child: _StatCard(
             icon: Icons.cloud_outlined,
             iconColor: AppColors.textSecondary,
-            value: '${data.co2Saved.toStringAsFixed(1)} kg',
+            value: '${data.co2Saved.toStringAsFixed(2)} kg',
             label: 'CO2 Saved',
           ),
         ),
@@ -353,7 +353,7 @@ class _RecentActivitySection extends StatelessWidget {
         if (activities.isEmpty)
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: AppColors.surfaceWhite,
               borderRadius: BorderRadius.circular(16),
@@ -373,12 +373,16 @@ class _RecentActivitySection extends StatelessWidget {
           )
         else
           Container(
+            alignment: Alignment.center,
+            width: double.infinity,
             decoration: BoxDecoration(
               color: AppColors.surfaceWhite,
               borderRadius: BorderRadius.circular(16),
             ),
-            child: ListView.separated(
+            child:
+            ListView.separated(
               shrinkWrap: true,
+              padding: EdgeInsets.zero,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: activities.length,
               separatorBuilder: (_, __) =>

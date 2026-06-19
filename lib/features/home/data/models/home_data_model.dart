@@ -11,9 +11,7 @@ class RecentActivityModel extends RecentActivity {
   });
 
   factory RecentActivityModel.fromJson(Map<String, dynamic> json) {
-    final points = (json['points'] as num?)?.toInt() ??
-        (json['pointsDelta'] as num?)?.toInt() ??
-        0;
+    final points = (json['amount'] as num?)?.toInt() ?? 0;
     final type = json['type'] as String? ?? 'DEPOSIT';
 
     return RecentActivityModel(
@@ -25,7 +23,8 @@ class RecentActivityModel extends RecentActivity {
           'RecySmart Bin',
       pointsDelta: type == 'REDEEM' ? -points.abs() : points,
       bottleCount: (json['bottleCount'] as num?)?.toInt(),
-      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
+      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
+          DateTime.now(),
     );
   }
 }
@@ -41,14 +40,15 @@ class HomeDataModel extends HomeData {
   });
 
   factory HomeDataModel.fromProfileAndTransactions(
-      Map<String, dynamic> profile,
-      dynamic txData,
-      ) {
+    Map<String, dynamic> profile,
+    dynamic txData,
+  ) {
     final wallet = profile['wallet'] as Map<String, dynamic>? ?? {};
     final currentBalance = (wallet['currentBalance'] as num?)?.toInt() ?? 0;
     final totalBottles = (wallet['totalBottles'] as num?)?.toInt() ?? 0;
     final totalWeight = (wallet['totalWeight'] as num?)?.toDouble() ?? 0.0;
-    final co2Saved = (wallet['co2Saved'] as num?)?.toDouble() ?? totalWeight * 1.5;
+    final co2Saved =
+        (wallet['co2Saved'] as num?)?.toDouble() ?? totalWeight * 1.5;
     final level = wallet['level'] as Map<String, dynamic>?;
     final levelName = level?['name'] as String?;
 

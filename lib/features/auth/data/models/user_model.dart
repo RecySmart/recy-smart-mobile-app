@@ -45,6 +45,7 @@ class WalletModel extends Wallet {
     final totalWeight = (json['totalWeight'] as num?)?.toDouble() ?? 0.0;
     final weightInKg = (json['weight'] as num?)?.toDouble() ?? totalWeight / 1000;
     final co2Saved = (json['co2Saved'] as num?)?.toDouble() ?? weightInKg * 1.5;
+    print("WALLET JSON: $json");
 
     return WalletModel(
       id: json['id'] as String,
