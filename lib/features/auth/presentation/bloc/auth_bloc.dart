@@ -17,6 +17,8 @@ abstract class AuthEvent extends Equatable {
 }
 
 class AuthCheckStatusEvent extends AuthEvent {}
+class AuthGetProfileEvent extends AuthEvent {}
+class AuthLogoutEvent extends AuthEvent {}
 
 class AuthLoginEvent extends AuthEvent {
   final String email;
@@ -39,8 +41,8 @@ class AuthRegisterEvent extends AuthEvent {
   List<Object> get props => [name, email, password];
 }
 
-class AuthLogoutEvent extends AuthEvent {}
-class AuthGetProfileEvent extends AuthEvent {}
+// Internal — fired by Dio interceptor on 401
+class AuthSessionExpiredEvent extends AuthEvent {}
 
 // ── States ───────────────────────────────────────────────────────────────────
 
@@ -61,6 +63,8 @@ class AuthAuthenticated extends AuthState {
 }
 
 class AuthUnauthenticated extends AuthState {}
+
+class AuthSessionExpired extends AuthState {}
 
 class AuthError extends AuthState {
   final String message;
@@ -90,26 +94,36 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthRegisterEvent>(_onRegister);
     on<AuthLogoutEvent>(_onLogout);
     on<AuthGetProfileEvent>(_onGetProfile);
+    on<AuthSessionExpiredEvent>(_onSessionExpired);
   }
 
   Future<void> _onCheckStatus(
       AuthCheckStatusEvent event, Emitter<AuthState> emit) async {
     emit(AuthLoading());
-    final token =
-    await storageService.read(key: AppConstants.accessTokenKey);
+    final token = await storageService.read(key: AppConstants.accessTokenKey);
     if (token == null || token.isEmpty) {
       emit(AuthUnauthenticated());
       return;
     }
+    // Token exists — fetch fresh profile with wallet
     final result = await getProfileUseCase();
     result.fold(
-          (_) => emit(AuthUnauthenticated()),
+          (failure) {
+        // 401 = token expired → show session expired state
+        if (failure.message.contains('expired') ||
+            failure.message.contains('Session') ||
+            failure.message.contains('401')) {
+          emit(AuthSessionExpired());
+        } else {
+          // Other error (network) → still consider authenticated with cached data
+          emit(AuthUnauthenticated());
+        }
+      },
           (user) => emit(AuthAuthenticated(user)),
     );
   }
 
-  Future<void> _onLogin(
-      AuthLoginEvent event, Emitter<AuthState> emit) async {
+  Future<void> _onLogin(AuthLoginEvent event, Emitter<AuthState> emit) async {
     emit(AuthLoading());
     final result =
     await loginUseCase(email: event.email, password: event.password);
@@ -141,10 +155,24 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   Future<void> _onGetProfile(
       AuthGetProfileEvent event, Emitter<AuthState> emit) async {
+    // Don't show loading — silent refresh in background
     final result = await getProfileUseCase();
     result.fold(
-          (failure) => emit(AuthError(failure.message)),
+          (failure) {
+        if (failure.message.contains('expired') ||
+            failure.message.contains('Session') ||
+            failure.message.contains('401')) {
+          emit(AuthSessionExpired());
+        }
+        // Otherwise keep current state
+      },
           (user) => emit(AuthAuthenticated(user)),
     );
+  }
+
+  Future<void> _onSessionExpired(
+      AuthSessionExpiredEvent event, Emitter<AuthState> emit) async {
+    await storageService.deleteAll();
+    emit(AuthSessionExpired());
   }
 }

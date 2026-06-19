@@ -29,7 +29,6 @@ void main() async {
   } catch (e, stack) {
     debugPrint('❌ ERROR en initDependencies: $e');
     debugPrint(stack.toString());
-    // Rethrow so the error is visible in the console
     rethrow;
   }
 
@@ -41,7 +40,6 @@ class RecySmartApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Use the singleton instances from GetIt
     final authBloc = sl<AuthBloc>();
     final homeBloc = sl<HomeBloc>();
     final recyclingBloc = sl<RecyclingBloc>();
@@ -52,11 +50,31 @@ class RecySmartApp extends StatelessWidget {
         BlocProvider<HomeBloc>.value(value: homeBloc),
         BlocProvider<RecyclingBloc>.value(value: recyclingBloc),
       ],
-      child: MaterialApp.router(
-        title: 'RecySmart',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        routerConfig: AppRouter.router(authBloc),
+      child: BlocListener<AuthBloc, AuthState>(
+        // Global listener: handle session expiry from anywhere in the app
+        listener: (context, state) {
+          if (state is AuthSessionExpired) {
+            AppRouter.navigatorKey.currentState?.pushNamedAndRemoveUntil(
+              '/', (route) => false,
+            );
+            ScaffoldMessenger.of(
+                AppRouter.navigatorKey.currentContext!)
+                .showSnackBar(
+              const SnackBar(
+                content: Text(
+                    'Tu sesión ha expirado. Por favor inicia sesión nuevamente.'),
+                backgroundColor: AppColors.warning,
+                duration: Duration(seconds: 4),
+              ),
+            );
+          }
+        },
+        child: MaterialApp.router(
+          title: 'RecySmart',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          routerConfig: AppRouter.router(authBloc),
+        ),
       ),
     );
   }

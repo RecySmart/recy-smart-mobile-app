@@ -42,18 +42,19 @@ class WalletModel extends Wallet {
   });
 
   factory WalletModel.fromJson(Map<String, dynamic> json) {
+    // Backend does NOT return 'id' in wallet — use a fallback
+    final id = json['id'] as String? ?? 'wallet-${json['userId'] ?? 'local'}';
     final totalWeight = (json['totalWeight'] as num?)?.toDouble() ?? 0.0;
-    final weightInKg = (json['weight'] as num?)?.toDouble() ?? totalWeight / 1000;
-    final co2Saved = (json['co2Saved'] as num?)?.toDouble() ?? weightInKg * 1.5;
-    print("WALLET JSON: $json");
+    final weight = (json['weight'] as num?)?.toDouble() ?? totalWeight / 1000;
+    final co2Saved = (json['co2Saved'] as num?)?.toDouble() ?? weight * 1.5;
 
     return WalletModel(
-      id: json['id'] as String,
+      id: id,
       currentBalance: (json['currentBalance'] as num?)?.toInt() ?? 0,
       lifetimeEarned: (json['lifetimeEarned'] as num?)?.toInt() ?? 0,
       totalBottles: (json['totalBottles'] as num?)?.toInt() ?? 0,
       totalWeight: totalWeight,
-      weight: weightInKg,
+      weight: weight,
       co2Saved: co2Saved,
       level: json['level'] != null
           ? WalletLevelModel.fromJson(json['level'] as Map<String, dynamic>)
@@ -71,8 +72,9 @@ class WalletLevelModel extends WalletLevel {
 
   factory WalletLevelModel.fromJson(Map<String, dynamic> json) {
     return WalletLevelModel(
-      id: json['id'] as String,
-      name: json['name'] as String,
+      // Backend only returns 'name' in the level object — id and minPoints are optional
+      id: json['id'] as String? ?? 'level-local',
+      name: json['name'] as String? ?? 'Eco Beginner',
       minPointsRequired: (json['minPointsRequired'] as num?)?.toInt() ?? 0,
     );
   }

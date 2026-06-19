@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/theme/app_theme.dart';
@@ -6,6 +7,7 @@ import '../../../../core/constants/app_constants.dart';
 import '../../../../core/utils/injection_container.dart';
 import '../../../../core/utils/app_router.dart';
 import '../../../../core/utils/storage_service.dart';
+import '../bloc/auth_bloc.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -55,6 +57,7 @@ class _SplashPageState extends State<SplashPage>
     if (!mounted) return;
 
     if (token != null && token.isNotEmpty) {
+      context.read<AuthBloc>().add(AuthCheckStatusEvent());
       context.go(AppRoutes.home);
     } else {
       context.go(AppRoutes.login);

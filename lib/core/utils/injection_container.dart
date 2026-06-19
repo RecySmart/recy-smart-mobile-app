@@ -9,7 +9,6 @@ import '../../features/auth/domain/usecases/register_usecase.dart';
 import '../network/api_client.dart';
 import 'storage_service.dart';
 
-// Auth
 import '../../features/auth/data/datasources/auth_remote_datasource.dart'
 as auth_ds;
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
@@ -17,35 +16,30 @@ import '../../features/auth/domain/repositories/auth_repository.dart';
 import '../../features/auth/domain/usecases/login_usecase.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 
-// Home
 import '../../features/home/data/datasources/home_remote_datasource.dart';
 import '../../features/home/data/repositories/home_repository_impl.dart';
 import '../../features/home/domain/repositories/home_repository.dart';
 import '../../features/home/domain/usecases/get_home_data_usecase.dart';
 import '../../features/home/presentation/bloc/home_bloc.dart';
 
-// Recycling
 import '../../features/recycling/data/datasources/recycling_remote_datasource.dart';
 import '../../features/recycling/data/repositories/recycling_repository_impl.dart';
 import '../../features/recycling/domain/repositories/recycling_repository.dart';
 import '../../features/recycling/domain/usecases/start_session_usecase.dart';
 import '../../features/recycling/presentation/bloc/recycling_bloc.dart';
 
-// Rewards
 import '../../features/rewards/data/datasources/rewards_remote_datasource.dart';
 import '../../features/rewards/data/repositories/rewards_repository_impl.dart';
 import '../../features/rewards/domain/repositories/rewards_repository.dart';
 import '../../features/rewards/domain/usecases/get_active_rewards_usecase.dart';
 import '../../features/rewards/presentation/bloc/rewards_bloc.dart';
 
-// Profile
 import '../../features/profile/data/datasources/profile_remote_datasource.dart';
 import '../../features/profile/data/repositories/profile_repository_impl.dart';
 import '../../features/profile/domain/repositories/profile_repository.dart';
 import '../../features/profile/domain/usecases/get_transaction_history_usecase.dart';
 import '../../features/profile/presentation/bloc/profile_bloc.dart';
 
-// Map
 import '../../features/map/data/datasources/map_remote_datasource.dart';
 import '../../features/map/data/repositories/map_repository_impl.dart';
 import '../../features/map/domain/repositories/map_repository.dart';
@@ -75,7 +69,7 @@ Future<void> initDependencies() async {
     ),
   );
 
-  // ── Core ──────────────────────────────────────────────────────────────────
+  // ── Core API client ───────────────────────────────────────────────────────
   sl.registerLazySingleton<ApiClient>(
         () => ApiClient(
       secureStorage: kIsWeb ? null : secureStorage,
@@ -94,6 +88,7 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton(() => RegisterUseCase(sl()));
   sl.registerLazySingleton(() => GetProfileUseCase(sl()));
   sl.registerLazySingleton(() => LogoutUseCase(sl()));
+
   sl.registerLazySingleton(
         () => AuthBloc(
       loginUseCase: sl(),
@@ -103,6 +98,14 @@ Future<void> initDependencies() async {
       storageService: sl(),
     ),
   );
+
+  // Wire 401 interceptor → AuthBloc (after both are registered)
+  sl<ApiClient>().onUnauthorized = () {
+    final authBloc = sl<AuthBloc>();
+    if (!authBloc.isClosed) {
+      authBloc.add(AuthSessionExpiredEvent());
+    }
+  };
 
   // ── Home ──────────────────────────────────────────────────────────────────
   sl.registerLazySingleton<HomeRemoteDataSource>(

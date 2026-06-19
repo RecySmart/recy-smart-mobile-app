@@ -24,7 +24,7 @@ class User extends Equatable {
 }
 
 class Wallet extends Equatable {
-  final String id;
+  final String id;          // may be a local fallback string if backend omits it
   final int currentBalance;
   final int lifetimeEarned;
   final int totalBottles;
@@ -34,7 +34,7 @@ class Wallet extends Equatable {
   final WalletLevel? level;
 
   const Wallet({
-    required this.id,
+    this.id = 'wallet-local',   // default so subclasses don't need to pass it
     required this.currentBalance,
     required this.lifetimeEarned,
     required this.totalBottles,
@@ -58,14 +58,14 @@ class Wallet extends Equatable {
 }
 
 class WalletLevel extends Equatable {
-  final String id;
+  final String id;                  // optional — backend may omit
   final String name;
   final int minPointsRequired;
 
   const WalletLevel({
-    required this.id,
+    this.id = 'level-local',
     required this.name,
-    required this.minPointsRequired,
+    this.minPointsRequired = 0,
   });
 
   @override

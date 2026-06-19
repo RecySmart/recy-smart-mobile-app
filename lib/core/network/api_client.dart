@@ -5,10 +5,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/app_constants.dart';
 import '../errors/failures.dart';
 
+// Callback so ApiClient can notify AuthBloc about 401s without a circular dep
+typedef OnUnauthorized = void Function();
+
 class ApiClient {
   late final Dio _dio;
   final FlutterSecureStorage? _secureStorage;
   final SharedPreferences? _prefs;
+  OnUnauthorized? onUnauthorized;
 
   ApiClient({
     FlutterSecureStorage? secureStorage,
@@ -51,6 +55,10 @@ class ApiClient {
 
   Interceptor _errorInterceptor() => InterceptorsWrapper(
     onError: (error, handler) {
+      // When we get a 401, notify auth system
+      if (error.response?.statusCode == 401) {
+        onUnauthorized?.call();
+      }
       handler.next(error);
     },
   );

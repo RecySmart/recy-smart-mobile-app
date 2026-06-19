@@ -2,9 +2,6 @@ class AppConstants {
   AppConstants._();
 
   // --- API ---
-  // static const String baseUrl = 'http://localhost:3000/api';
-
-  // Local
   static const String baseUrl = 'http://10.0.2.2:3000/api';
 
   // Auth endpoints
@@ -12,6 +9,9 @@ class AppConstants {
   static const String loginEndpoint = '/auth/login';
   static const String verifyEndpoint = '/auth/verify';
   static const String profileEndpoint = '/auth/profile';
+
+  // Wallet endpoint (gamification-ms via client-gateway)
+  static const String walletEndpoint = '/wallets/me';
 
   // Recycling endpoints
   static const String startSessionEndpoint = '/iot/bin/start/session';

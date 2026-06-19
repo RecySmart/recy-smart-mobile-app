@@ -25,6 +25,9 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
 class AppRouter {
+  // Expose navigator key for global navigation (e.g., session expiry)
+  static GlobalKey<NavigatorState> get navigatorKey => _rootNavigatorKey;
+
   static GoRouter router(AuthBloc authBloc) => GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: AppRoutes.splash,
@@ -45,7 +48,6 @@ class AppRouter {
         path: AppRoutes.register,
         builder: (_, __) => const RegisterPage(),
       ),
-      // Shell with bottom nav
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
         builder: (context, state, child) => MainScaffold(child: child),
