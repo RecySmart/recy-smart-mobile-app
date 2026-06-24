@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/app_router.dart';
-import '../../../../core/utils/injection_container.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/domain/entities/user.dart';
 
@@ -18,8 +17,9 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
-    // Silently refresh profile to get fresh wallet data every time we navigate here
+    // Silent refresh every time we land here
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       final authBloc = context.read<AuthBloc>();
       if (authBloc.state is AuthAuthenticated) {
         authBloc.add(AuthGetProfileEvent());
@@ -34,35 +34,31 @@ class _ProfilePageState extends State<ProfilePage> {
         if (state is AuthSessionExpired) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Tu sesión ha expirado. Por favor inicia sesión nuevamente.'),
+              content: Text('Tu sesión expiró. Inicia sesión nuevamente.'),
               backgroundColor: AppColors.warning,
-              duration: Duration(seconds: 3),
             ),
           );
-          Future.delayed(const Duration(seconds: 1), () {
-            if (mounted) context.go(AppRoutes.login);
-          });
+          // Use go() — replaces entire stack, no pop conflict
+          context.go(AppRoutes.login);
         }
         if (state is AuthUnauthenticated) {
           context.go(AppRoutes.login);
         }
       },
       builder: (context, state) {
-        // Show skeleton while loading — not an infinite spinner
         if (state is AuthLoading || state is AuthInitial) {
           return const _ProfileSkeleton();
         }
         if (state is AuthAuthenticated) {
           return _ProfileContent(user: state.user);
         }
-        // AuthError or other — show last known user if possible
         return const _ProfileSkeleton();
       },
     );
   }
 }
 
-// ── Skeleton while loading ────────────────────────────────────────────────────
+// ── Skeleton ─────────────────────────────────────────────────────────────────
 
 class _ProfileSkeleton extends StatelessWidget {
   const _ProfileSkeleton();
@@ -83,28 +79,29 @@ class _ProfileSkeleton extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const CircleAvatar(
-                  radius: 30,
-                  backgroundColor: Colors.white24,
-                ),
+                const CircleAvatar(radius: 30, backgroundColor: Colors.white24),
                 const SizedBox(width: 16),
                 Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                        width: 120, height: 16,
-                        decoration: BoxDecoration(
-                          color: Colors.white24,
-                          borderRadius: BorderRadius.circular(8),
-                        )),
+                      width: 120,
+                      height: 16,
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     Container(
-                        width: 180, height: 12,
-                        decoration: BoxDecoration(
-                          color: Colors.white24,
-                          borderRadius: BorderRadius.circular(6),
-                        )),
+                      width: 180,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -121,7 +118,7 @@ class _ProfileSkeleton extends StatelessWidget {
   }
 }
 
-// ── Profile Content ───────────────────────────────────────────────────────────
+// ── Content ───────────────────────────────────────────────────────────────────
 
 class _ProfileContent extends StatelessWidget {
   final User user;
@@ -134,7 +131,6 @@ class _ProfileContent extends StatelessWidget {
       backgroundColor: AppColors.backgroundLight,
       body: CustomScrollView(
         slivers: [
-          // Green header
           SliverToBoxAdapter(
             child: Container(
               color: AppColors.primary,
@@ -150,13 +146,11 @@ class _ProfileContent extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Perfil',
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineSmall
-                            ?.copyWith(color: Colors.white),
-                      ),
+                      Text('Perfil',
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(color: Colors.white)),
                       IconButton(
                         icon: const Icon(Icons.settings_outlined,
                             color: Colors.white),
@@ -185,22 +179,18 @@ class _ProfileContent extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              user.name,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .headlineSmall
-                                  ?.copyWith(color: Colors.white),
-                            ),
-                            Text(
-                              user.email,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(color: Colors.white70),
-                            ),
-                            const SizedBox(height: 6),
-                            if (wallet?.level != null)
+                            Text(user.name,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineSmall
+                                    ?.copyWith(color: Colors.white)),
+                            Text(user.email,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(color: Colors.white70)),
+                            if (wallet?.level != null) ...[
+                              const SizedBox(height: 6),
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: 10, vertical: 4),
@@ -219,6 +209,7 @@ class _ProfileContent extends StatelessWidget {
                                   ),
                                 ),
                               ),
+                            ],
                           ],
                         ),
                       ),
@@ -249,24 +240,16 @@ class _ProfileContent extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
+                  _StatItem(value: '${wallet?.totalBottles ?? 0}', label: 'BOTELLAS'),
+                  Container(width: 1, height: 36, color: AppColors.surfaceGrey),
                   _StatItem(
-                    value: '${wallet?.totalBottles ?? 0}',
-                    label: 'BOTELLAS',
-                  ),
-                  Container(
-                      width: 1, height: 36, color: AppColors.surfaceGrey),
-                  _StatItem(
-                    value: wallet != null
-                        ? _formatPoints(wallet.lifetimeEarned)
-                        : '0',
+                    value: wallet != null ? _formatPoints(wallet.lifetimeEarned) : '0',
                     label: 'PTS TOTALES',
                     valueColor: AppColors.primary,
                   ),
-                  Container(
-                      width: 1, height: 36, color: AppColors.surfaceGrey),
+                  Container(width: 1, height: 36, color: AppColors.surfaceGrey),
                   _StatItem(
-                    value:
-                    '${wallet?.co2Saved.toStringAsFixed(2) ?? '0.0'} kg',
+                    value: '${wallet?.co2Saved.toStringAsFixed(1) ?? '0.0'} kg',
                     label: 'CO2 AHORRADO',
                   ),
                 ],
@@ -274,12 +257,10 @@ class _ProfileContent extends StatelessWidget {
             ),
           ),
 
-          // If no wallet, show warning
           if (wallet == null)
             SliverToBoxAdapter(
               child: Container(
-                margin:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFFF3E0),
@@ -292,10 +273,11 @@ class _ProfileContent extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'Tu wallet aún se está inicializando. Intenta cerrar y abrir la app.',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.warning,
-                        ),
+                        'Tu wallet aún se está inicializando. Recicla tu primera botella para activarla.',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(color: AppColors.warning),
                       ),
                     ),
                   ],
@@ -363,31 +345,7 @@ class _ProfileContent extends StatelessWidget {
                     iconColor: const Color(0xFFFFEBEE),
                     label: 'Cerrar Sesión',
                     labelColor: AppColors.error,
-                    onTap: () => showDialog(
-                      context: context,
-                      builder: (_) => AlertDialog(
-                        title: const Text('Cerrar Sesión'),
-                        content: const Text(
-                            '¿Estás seguro que deseas cerrar sesión?'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('Cancelar'),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                              context
-                                  .read<AuthBloc>()
-                                  .add(AuthLogoutEvent());
-                            },
-                            child: Text('Salir',
-                                style:
-                                TextStyle(color: AppColors.error)),
-                          ),
-                        ],
-                      ),
-                    ),
+                    onTap: () => _showLogoutDialog(context),
                   ),
                 ]),
               ]),
@@ -401,6 +359,33 @@ class _ProfileContent extends StatelessWidget {
   String _formatPoints(int pts) {
     if (pts >= 1000) return '${(pts / 1000).toStringAsFixed(1)}k';
     return '$pts';
+  }
+
+  // ── Logout dialog — uses go() not pop() to avoid navigator conflict ─────────
+  void _showLogoutDialog(BuildContext context) {
+    showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('Cerrar Sesión'),
+        content: const Text('¿Estás seguro que deseas cerrar sesión?'),
+        actions: [
+          TextButton(
+            // Close dialog only — Navigator.pop on the dialog context is safe
+            onPressed: () => Navigator.of(dialogCtx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogCtx).pop(true),
+            child: Text('Salir', style: TextStyle(color: AppColors.error)),
+          ),
+        ],
+      ),
+    ).then((confirmed) {
+      if (confirmed == true && context.mounted) {
+        // Dispatch logout — BlocConsumer listener will call context.go(login)
+        context.read<AuthBloc>().add(AuthLogoutEvent());
+      }
+    });
   }
 }
 
@@ -435,7 +420,6 @@ class _StatItem extends StatelessWidget {
 class _SectionLabel extends StatelessWidget {
   final String label;
   const _SectionLabel({required this.label});
-
   @override
   Widget build(BuildContext context) => Text(
     label,
@@ -454,7 +438,6 @@ class _MenuItem {
   final VoidCallback? onTap;
   final Widget? trailing;
   final String? trailingText;
-
   const _MenuItem({
     required this.icon,
     required this.iconColor,
@@ -493,14 +476,14 @@ class _MenuCard extends StatelessWidget {
                 color: item.iconColor,
                 shape: BoxShape.circle,
               ),
-              child: Icon(item.icon,
-                  size: 18, color: AppColors.textSecondary),
+              child: Icon(item.icon, size: 18, color: AppColors.textSecondary),
             ),
             title: Text(
               item.label,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: item.labelColor,
-              ),
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(color: item.labelColor),
             ),
             trailing: item.trailing ??
                 (item.trailingText != null

@@ -389,12 +389,14 @@ class _RecentActivitySection extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
             ),
             child: ListView.separated(
+              padding: EdgeInsets.all(0),
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: activities.length,
               separatorBuilder: (_, __) =>
               const Divider(height: 1, indent: 16, endIndent: 16),
-              itemBuilder: (_, i) => _ActivityTile(activity: activities[i]),
+              itemBuilder: (_, i) =>
+                  _ActivityTile(activity: activities[i]),
             ),
           ),
       ],

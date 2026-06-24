@@ -1,8 +1,13 @@
+import 'dart:io';
+
 class AppConstants {
   AppConstants._();
 
   // --- API ---
-  static const String baseUrl = 'http://10.0.2.2:3000/api';
+  // static const String baseUrl = 'http://10.0.2.2:3000/api';
+  static final String baseUrl = Platform.isAndroid
+      ? 'http://10.0.2.2:3000/api'
+      : 'http://localhost:3000/api';
 
   // Auth endpoints
   static const String registerEndpoint = '/auth/register';

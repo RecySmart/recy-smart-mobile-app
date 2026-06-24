@@ -8,12 +8,29 @@ import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../domain/entities/reward.dart';
 import '../bloc/rewards_bloc.dart';
 
-class RewardsStorePage extends StatelessWidget {
+class RewardsStorePage extends StatefulWidget {
   const RewardsStorePage({super.key});
 
   @override
+  State<RewardsStorePage> createState() => _RewardsStorePageState();
+}
+
+class _RewardsStorePageState extends State<RewardsStorePage> {
+  @override
+  void initState() {
+    super.initState();
+    // Refresh wallet balance every time this tab is opened
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final authBloc = context.read<AuthBloc>();
+      if (authBloc.state is AuthAuthenticated) {
+        authBloc.add(AuthGetProfileEvent());
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // BlocProvider.value — singleton, do NOT close on dispose
     return BlocProvider.value(
       value: sl<RewardsBloc>()..add(RewardsLoadEvent()),
       child: const _RewardsView(),
@@ -24,13 +41,7 @@ class RewardsStorePage extends StatelessWidget {
 class _RewardsView extends StatelessWidget {
   const _RewardsView();
 
-  static const _categories = [
-    'All',
-    'Food & Drink',
-    'Transport',
-    'Eco',
-    'General'
-  ];
+  static const _categories = ['All', 'Food & Drink', 'Transport', 'Eco', 'General'];
 
   @override
   Widget build(BuildContext context) {
@@ -39,6 +50,8 @@ class _RewardsView extends StatelessWidget {
       body: BlocListener<RewardsBloc, RewardsState>(
         listener: (context, state) {
           if (state is RewardsRedeemSuccess) {
+            // Refresh balance after redemption
+            context.read<AuthBloc>().add(AuthGetProfileEvent());
             context.push(
               AppRoutes.couponDetail.replaceFirst(':id', state.coupon.id),
             );
@@ -59,8 +72,9 @@ class _RewardsView extends StatelessWidget {
             SliverToBoxAdapter(
               child: BlocBuilder<RewardsBloc, RewardsState>(
                 builder: (context, state) {
-                  final selected =
-                      state is RewardsLoaded ? state.selectedCategory : 'All';
+                  final selected = state is RewardsLoaded
+                      ? state.selectedCategory
+                      : 'All';
                   return SizedBox(
                     height: 48,
                     child: ListView.separated(
@@ -80,11 +94,8 @@ class _RewardsView extends StatelessWidget {
                           backgroundColor: AppColors.surfaceWhite,
                           selectedColor: AppColors.secondary,
                           labelStyle: TextStyle(
-                            color: isSelected
-                                ? Colors.white
-                                : AppColors.textPrimary,
-                            fontWeight:
-                                isSelected ? FontWeight.w600 : FontWeight.w400,
+                            color: isSelected ? Colors.white : AppColors.textPrimary,
+                            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                           ),
                           side: BorderSide.none,
                           shape: RoundedRectangleBorder(
@@ -108,16 +119,14 @@ class _RewardsView extends StatelessWidget {
                 if (state is RewardsLoaded) {
                   if (state.filtered.isEmpty) {
                     return const SliverFillRemaining(
-                      child: Center(
-                        child: Text('No rewards in this category.'),
-                      ),
+                      child: Center(child: Text('No rewards in this category.')),
                     );
                   }
                   return SliverPadding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
-                        (_, i) => Padding(
+                            (_, i) => Padding(
                           padding: const EdgeInsets.only(bottom: 16),
                           child: _RewardCard(
                             reward: state.filtered[i],
@@ -150,17 +159,16 @@ class _BalanceHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 16),
-          Text('Rewards Store',
-              style: Theme.of(context).textTheme.displaySmall),
+          Text('Rewards Store', style: Theme.of(context).textTheme.displaySmall),
           const SizedBox(height: 12),
+          // BlocBuilder on AuthBloc so balance updates whenever profile refreshes
           BlocBuilder<AuthBloc, AuthState>(
             builder: (context, state) {
               final points = state is AuthAuthenticated
                   ? state.user.wallet?.currentBalance ?? 0
                   : 0;
               return Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [AppColors.primary, AppColors.primaryDark],
@@ -185,13 +193,10 @@ class _BalanceHeader extends StatelessWidget {
                                 .bodySmall
                                 ?.copyWith(color: Colors.white70)),
                         Text('$points Pts',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleLarge
-                                ?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                )),
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            )),
                       ],
                     ),
                     const Spacer(),
@@ -203,8 +208,7 @@ class _BalanceHeader extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 6),
                       ),
-                      onPressed: () =>
-                          context.push(AppRoutes.transactionHistory),
+                      onPressed: () => context.push(AppRoutes.transactionHistory),
                       child: const Text('History'),
                     ),
                   ],
@@ -222,7 +226,6 @@ class _BalanceHeader extends StatelessWidget {
 class _RewardCard extends StatelessWidget {
   final Reward reward;
   final VoidCallback onRedeem;
-
   const _RewardCard({required this.reward, required this.onRedeem});
 
   @override
@@ -265,10 +268,10 @@ class _RewardCard extends StatelessWidget {
                     Text(
                       reward.category.toUpperCase(),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.warning,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1,
-                          ),
+                        color: AppColors.warning,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1,
+                      ),
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -280,9 +283,9 @@ class _RewardCard extends StatelessWidget {
                       child: Text(
                         '${reward.costInPoints}',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w700,
-                            ),
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ],
@@ -300,9 +303,9 @@ class _RewardCard extends StatelessWidget {
                     child: Text(
                       'Only ${reward.remainingStock} left!',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.error,
-                            fontWeight: FontWeight.w500,
-                          ),
+                        color: AppColors.error,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 BlocBuilder<RewardsBloc, RewardsState>(
@@ -316,15 +319,16 @@ class _RewardCard extends StatelessWidget {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.secondary,
                         ),
-                        onPressed:
-                            reward.isAvailable && !isLoading ? onRedeem : null,
+                        onPressed: reward.isAvailable && !isLoading
+                            ? onRedeem
+                            : null,
                         child: isLoading
                             ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: Colors.white),
-                              )
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white),
+                        )
                             : const Text('Redeem Reward'),
                       ),
                     );
