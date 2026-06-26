@@ -13,6 +13,7 @@ import '../../features/recycling/presentation/pages/active_session_page.dart';
 import '../../features/recycling/presentation/pages/session_summary_page.dart';
 import '../../features/rewards/presentation/pages/rewards_store_page.dart';
 import '../../features/rewards/presentation/pages/coupon_detail_page.dart';
+import '../../features/rewards/presentation/pages/my_coupons_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../features/profile/presentation/pages/transaction_history_page.dart';
 import '../../features/profile/presentation/pages/edit_profile_page.dart';
@@ -105,6 +106,10 @@ class AppRouter {
         },
       ),
       GoRoute(
+        path: AppRoutes.myCoupons,
+        builder: (_, __) => const MyCouponsPage(),
+      ),
+      GoRoute(
         path: AppRoutes.transactionHistory,
         builder: (_, __) => const TransactionHistoryPage(),
       ),
@@ -146,6 +151,7 @@ class AppRoutes {
   static const activeSession = '/session/active';
   static const sessionSummary = '/session/summary';
   static const couponDetail = '/coupons/:id';
+  static const myCoupons = '/coupons';
   static const transactionHistory = '/profile/history';
   static const editProfile = '/profile/edit';
   static const achievements = '/profile/achievements';

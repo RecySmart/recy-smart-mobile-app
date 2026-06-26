@@ -208,7 +208,7 @@ class _BalanceHeader extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 6),
                       ),
-                      onPressed: () => context.push(AppRoutes.transactionHistory),
+                      onPressed: () => context.push(AppRoutes.myCoupons),
                       child: const Text('History'),
                     ),
                   ],
