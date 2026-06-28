@@ -12,20 +12,21 @@ class RecyclingSessionModel extends RecyclingSession {
   });
 
   factory RecyclingSessionModel.fromJson(Map<String, dynamic> json) {
-    // The API returns the session data - adapt based on actual response shape
+    // Backend response shape: { session: { id, smartBinId, ... }, bin: { locationName, ... } }
     final session = json['session'] as Map<String, dynamic>? ?? json;
-    final bin = json['bin'] as Map<String, dynamic>? ?? {};
+    final bin     = json['bin']     as Map<String, dynamic>? ?? {};
 
     return RecyclingSessionModel(
-      sessionId:
-          session['id'] as String? ?? session['sessionId'] as String? ?? '',
-      binId: session['binId'] as String? ?? '',
-      locationName: bin['location'] as String? ??
-          bin['name'] as String? ??
-          'RecySmart Bin',
+      sessionId: session['id'] as String? ??
+          session['sessionId'] as String? ?? '',
+      binId: session['smartBinId'] as String? ??
+          session['binId']      as String? ?? '',
+      locationName: bin['locationName'] as String? ??
+          bin['location']     as String? ??
+          bin['name']         as String? ?? 'RecySmart Bin',
       bottlesDropped: 0,
-      pointsEarned: 0,
-      co2Saved: 0.0,
+      pointsEarned:   0,
+      co2Saved:       0.0,
       status: SessionStatus.active,
     );
   }

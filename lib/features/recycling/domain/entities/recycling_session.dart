@@ -8,6 +8,7 @@ class RecyclingSession extends Equatable {
   final int pointsEarned;
   final double co2Saved;
   final SessionStatus status;
+  final String? lastWsEvent; // 'bottle_accepted' | 'bottle_rejected' etc.
 
   const RecyclingSession({
     required this.sessionId,
@@ -17,6 +18,7 @@ class RecyclingSession extends Equatable {
     this.pointsEarned = 0,
     this.co2Saved = 0.0,
     this.status = SessionStatus.active,
+    this.lastWsEvent,
   });
 
   RecyclingSession copyWith({
@@ -24,6 +26,7 @@ class RecyclingSession extends Equatable {
     int? pointsEarned,
     double? co2Saved,
     SessionStatus? status,
+    String? lastWsEvent,
   }) =>
       RecyclingSession(
         sessionId: sessionId,
@@ -33,10 +36,12 @@ class RecyclingSession extends Equatable {
         pointsEarned: pointsEarned ?? this.pointsEarned,
         co2Saved: co2Saved ?? this.co2Saved,
         status: status ?? this.status,
+        lastWsEvent: lastWsEvent,
       );
 
   @override
-  List<Object> get props => [sessionId, binId, bottlesDropped, pointsEarned, status];
+  List<Object?> get props =>
+      [sessionId, binId, bottlesDropped, pointsEarned, status, lastWsEvent];
 }
 
 enum SessionStatus { active, completed, autoclosed, error }

@@ -7,6 +7,7 @@ import '../../features/auth/domain/usecases/get_profile_usecase.dart';
 import '../../features/auth/domain/usecases/logout_usecase.dart';
 import '../../features/auth/domain/usecases/register_usecase.dart';
 import '../network/api_client.dart';
+import '../services/socket_service.dart';
 import 'storage_service.dart';
 
 import '../../features/auth/data/datasources/auth_remote_datasource.dart' as auth_ds;
@@ -66,6 +67,7 @@ Future<void> initDependencies() async {
     sl.registerLazySingleton<FlutterSecureStorage>(() => secureStorage!);
   }
 
+  // ── Unified Storage ───────────────────────────────────────────────────────
   sl.registerLazySingleton<StorageService>(
         () => StorageService(
       secure: kIsWeb ? null : secureStorage,
@@ -73,12 +75,16 @@ Future<void> initDependencies() async {
     ),
   );
 
+  // ── Core ──────────────────────────────────────────────────────────────────
   sl.registerLazySingleton<ApiClient>(
         () => ApiClient(
       secureStorage: kIsWeb ? null : secureStorage,
       prefs: sl<SharedPreferences>(),
     ),
   );
+
+  // ── Socket.io service (one per session, not a true singleton) ─────────────
+  sl.registerFactory<SocketService>(() => SocketService());
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   sl.registerLazySingleton<auth_ds.AuthRemoteDataSource>(
@@ -122,8 +128,15 @@ Future<void> initDependencies() async {
         () => RecyclingRepositoryImpl(sl()),
   );
   sl.registerLazySingleton(() => StartSessionUseCase(sl()));
+  sl.registerLazySingleton(() => EndSessionUseCase(sl()));
   sl.registerLazySingleton(
-        () => RecyclingBloc(sl<StartSessionUseCase>(), sl<HomeBloc>()),
+        () => RecyclingBloc(
+      startSession:  sl<StartSessionUseCase>(),
+      endSession:    sl<EndSessionUseCase>(),
+      homeBloc:      sl<HomeBloc>(),
+      socketService: sl<SocketService>(), // gets a new instance via registerFactory
+      storage:       sl<StorageService>(),
+    ),
   );
 
   // ── Rewards ───────────────────────────────────────────────────────────────
