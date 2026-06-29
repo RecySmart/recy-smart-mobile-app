@@ -21,9 +21,7 @@ class ApiClient {
         _prefs = prefs {
     _dio = Dio(
       BaseOptions(
-        baseUrl: kIsWeb
-            ? 'http://localhost:3000/api'
-            : AppConstants.baseUrl,
+        baseUrl: kIsWeb ? AppConstants.baseUrl : 'http://localhost:3000/api',
         connectTimeout: const Duration(seconds: 15),
         receiveTimeout: const Duration(seconds: 15),
         headers: {
@@ -44,24 +42,24 @@ class ApiClient {
   }
 
   Interceptor _authInterceptor() => InterceptorsWrapper(
-    onRequest: (options, handler) async {
-      final token = await _readToken();
-      if (token != null && token.isNotEmpty) {
-        options.headers['Authorization'] = 'Bearer $token';
-      }
-      handler.next(options);
-    },
-  );
+        onRequest: (options, handler) async {
+          final token = await _readToken();
+          if (token != null && token.isNotEmpty) {
+            options.headers['Authorization'] = 'Bearer $token';
+          }
+          handler.next(options);
+        },
+      );
 
   Interceptor _errorInterceptor() => InterceptorsWrapper(
-    onError: (error, handler) {
-      // When we get a 401, notify auth system
-      if (error.response?.statusCode == 401) {
-        onUnauthorized?.call();
-      }
-      handler.next(error);
-    },
-  );
+        onError: (error, handler) {
+          // When we get a 401, notify auth system
+          if (error.response?.statusCode == 401) {
+            onUnauthorized?.call();
+          }
+          handler.next(error);
+        },
+      );
 
   Future<Response> get(String path,
       {Map<String, dynamic>? queryParameters}) async {
