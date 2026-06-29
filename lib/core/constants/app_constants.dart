@@ -6,36 +6,36 @@ class AppConstants {
 
   // Make these compile-time constants so they can be used in const
   // expressions (e.g. const String.fromEnvironment default values).
-  static const String baseApiUrl = 'https://curly-camera-tusk.ngrok-free.dev';
+  static const String baseUrl = 'https://curly-camera-tusk.ngrok-free.dev';
 
   // 'https://vascular-habitat-correct.ngrok-free.dev';
-  static const String baseSocketURL = 'https://curly-camera-tusk.ngrok-free.dev';
+  static const String socketUrl = 'https://curly-camera-tusk.ngrok-free.dev';
 
   // 'https://vascular-habitat-correct.ngrok-free.dev';
 
   // --- API ---
-  static String get baseUrl {
-    if (kIsWeb) {
-      return const String.fromEnvironment('API_URL',
-          defaultValue: '$baseApiUrl/api');
-    }
-    return Platform.isAndroid
-        ? 'http://10.0.2.2:3000/api'
-        : 'http://localhost:3000/api';
-  }
-
-  // Socket URL — sin /api al final
-  static String get socketUrl {
-    if (kIsWeb) {
-      return const String.fromEnvironment(
-        'SOCKET_URL',
-        defaultValue: baseSocketURL,
-      );
-    }
-    return Platform.isAndroid
-        ? 'http://10.0.2.2:3000'
-        : 'http://localhost:3000';
-  }
+  // static String get baseUrl {
+  //   if (kIsWeb) {
+  //     return const String.fromEnvironment('API_URL',
+  //         defaultValue: '$baseApiUrl/api');
+  //   }
+  //   return Platform.isAndroid
+  //       ? 'http://10.0.2.2:3000/api'
+  //       : 'http://localhost:3000/api';
+  // }
+  //
+  // // Socket URL — sin /api al final
+  // static String get socketUrl {
+  //   if (kIsWeb) {
+  //     return const String.fromEnvironment(
+  //       'SOCKET_URL',
+  //       defaultValue: baseSocketURL,
+  //     );
+  //   }
+  //   return Platform.isAndroid
+  //       ? 'http://10.0.2.2:3000'
+  //       : 'http://localhost:3000';
+  // }
 
   // Auth endpoints
   static const String registerEndpoint = '/auth/register';
