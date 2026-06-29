@@ -11,7 +11,7 @@ class AppConstants {
   // --- API ---
   static String get baseUrl {
     if (kIsWeb) {
-      return String.fromEnvironment('API_URL', defaultValue: baseApiUrl);
+      return String.fromEnvironment('API_URL', defaultValue: '$baseApiUrl/api');
     }
     return Platform.isAndroid
         ? 'http://10.0.2.2:3000/api'
