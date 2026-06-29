@@ -6,10 +6,12 @@ class AppConstants {
 
   // Make these compile-time constants so they can be used in const
   // expressions (e.g. const String.fromEnvironment default values).
-  static const String baseApiUrl =
-      'https://vascular-habitat-correct.ngrok-free.dev';
-  static const String baseSocketURL =
-      'https://vascular-habitat-correct.ngrok-free.dev';
+  static const String baseApiUrl = 'http://100.48.69.74';
+
+  // 'https://vascular-habitat-correct.ngrok-free.dev';
+  static const String baseSocketURL = 'http://100.48.69.74';
+
+  // 'https://vascular-habitat-correct.ngrok-free.dev';
 
   // --- API ---
   static String get baseUrl {
