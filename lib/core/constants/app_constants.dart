@@ -4,14 +4,18 @@ import 'package:flutter/foundation.dart';
 class AppConstants {
   AppConstants._();
 
-  static String baseApiUrl = 'https://vascular-habitat-correct.ngrok-free.dev';
-  static String baseSocketURL =
+  // Make these compile-time constants so they can be used in const
+  // expressions (e.g. const String.fromEnvironment default values).
+  static const String baseApiUrl =
+      'https://vascular-habitat-correct.ngrok-free.dev';
+  static const String baseSocketURL =
       'https://vascular-habitat-correct.ngrok-free.dev';
 
   // --- API ---
   static String get baseUrl {
     if (kIsWeb) {
-      return String.fromEnvironment('API_URL', defaultValue: '$baseApiUrl/api');
+      return const String.fromEnvironment('API_URL',
+          defaultValue: '$baseApiUrl/api');
     }
     return Platform.isAndroid
         ? 'http://10.0.2.2:3000/api'
@@ -21,7 +25,7 @@ class AppConstants {
   // Socket URL — sin /api al final
   static String get socketUrl {
     if (kIsWeb) {
-      return String.fromEnvironment(
+      return const String.fromEnvironment(
         'SOCKET_URL',
         defaultValue: baseSocketURL,
       );
