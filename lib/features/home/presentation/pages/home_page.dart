@@ -438,11 +438,13 @@ class _ActivityTile extends StatelessWidget {
         style: Theme.of(context).textTheme.bodySmall,
       ),
       trailing: Text(
-        isDeposit
+        activity.pointsDelta >= 0
             ? '+${activity.pointsDelta} pts'
-            : '-${activity.pointsDelta.abs()} pts',
+            : '${activity.pointsDelta} pts',
         style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          color: isDeposit ? AppColors.primary : AppColors.warning,
+          color: activity.pointsDelta >= 0
+              ? AppColors.primary
+              : AppColors.warning,
           fontWeight: FontWeight.w600,
         ),
       ),
