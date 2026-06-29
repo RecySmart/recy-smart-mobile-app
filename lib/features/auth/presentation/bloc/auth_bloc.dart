@@ -8,7 +8,7 @@ import '../../domain/usecases/login_usecase.dart';
 import '../../domain/usecases/logout_usecase.dart';
 import '../../domain/usecases/register_usecase.dart';
 
-// ── Events ───────────────────────────────────────────────────────────────────
+// ── Events ────────────────────────────────────────────────────────────────────
 
 abstract class AuthEvent extends Equatable {
   const AuthEvent();
@@ -19,6 +19,7 @@ abstract class AuthEvent extends Equatable {
 class AuthCheckStatusEvent extends AuthEvent {}
 class AuthGetProfileEvent extends AuthEvent {}
 class AuthLogoutEvent extends AuthEvent {}
+class AuthSessionExpiredEvent extends AuthEvent {} // fired by 401 interceptor
 
 class AuthLoginEvent extends AuthEvent {
   final String email;
@@ -41,10 +42,7 @@ class AuthRegisterEvent extends AuthEvent {
   List<Object> get props => [name, email, password];
 }
 
-// Internal — fired by Dio interceptor on 401
-class AuthSessionExpiredEvent extends AuthEvent {}
-
-// ── States ───────────────────────────────────────────────────────────────────
+// ── States ────────────────────────────────────────────────────────────────────
 
 abstract class AuthState extends Equatable {
   const AuthState();
@@ -64,6 +62,7 @@ class AuthAuthenticated extends AuthState {
 
 class AuthUnauthenticated extends AuthState {}
 
+// Separate state so main.dart can show a specific "session expired" snackbar
 class AuthSessionExpired extends AuthState {}
 
 class AuthError extends AuthState {
@@ -73,7 +72,7 @@ class AuthError extends AuthState {
   List<Object> get props => [message];
 }
 
-// ── BLoC ─────────────────────────────────────────────────────────────────────
+// ── BLoC ──────────────────────────────────────────────────────────────────────
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final LoginUseCase loginUseCase;
@@ -105,20 +104,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthUnauthenticated());
       return;
     }
-    // Token exists — fetch fresh profile with wallet
     final result = await getProfileUseCase();
     result.fold(
-          (failure) {
-        // 401 = token expired → show session expired state
-        if (failure.message.contains('expired') ||
-            failure.message.contains('Session') ||
-            failure.message.contains('401')) {
-          emit(AuthSessionExpired());
-        } else {
-          // Other error (network) → still consider authenticated with cached data
-          emit(AuthUnauthenticated());
-        }
-      },
+          (_) => emit(AuthUnauthenticated()),
           (user) => emit(AuthAuthenticated(user)),
     );
   }
@@ -155,16 +143,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   Future<void> _onGetProfile(
       AuthGetProfileEvent event, Emitter<AuthState> emit) async {
-    // Don't show loading — silent refresh in background
     final result = await getProfileUseCase();
     result.fold(
           (failure) {
-        if (failure.message.contains('expired') ||
-            failure.message.contains('Session') ||
-            failure.message.contains('401')) {
-          emit(AuthSessionExpired());
+        // 401 while refreshing profile = session expired
+        if (failure.message.contains('401') ||
+            failure.message.toLowerCase().contains('expired') ||
+            failure.message.toLowerCase().contains('unauthorized')) {
+          add(AuthSessionExpiredEvent());
         }
-        // Otherwise keep current state
       },
           (user) => emit(AuthAuthenticated(user)),
     );
@@ -172,7 +159,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   Future<void> _onSessionExpired(
       AuthSessionExpiredEvent event, Emitter<AuthState> emit) async {
+    // Clear all stored credentials
     await storageService.deleteAll();
+    // Emit specific state so main.dart can show "session expired" snackbar
     emit(AuthSessionExpired());
   }
 }

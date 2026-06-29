@@ -66,21 +66,25 @@ class RecyclingSessionActive extends RecyclingState {
   final RecyclingSession session;
   final int timerSeconds;
   final bool bottleRejected;
+  // Increments on every rejection so Equatable always sees a new state
+  final int rejectionCount;
 
   const RecyclingSessionActive({
     required this.session,
     required this.timerSeconds,
     this.bottleRejected = false,
+    this.rejectionCount = 0,
   });
 
   RecyclingSessionActive copyWithTimer(int t) => RecyclingSessionActive(
     session: session,
     timerSeconds: t,
     bottleRejected: bottleRejected,
+    rejectionCount: rejectionCount,
   );
 
   @override
-  List<Object> get props => [session, timerSeconds, bottleRejected];
+  List<Object> get props => [session, timerSeconds, bottleRejected, rejectionCount];
 }
 
 class RecyclingSessionCompleted extends RecyclingState {
@@ -241,10 +245,12 @@ class RecyclingBloc extends Bloc<RecyclingEvent, RecyclingState> {
             ?? AppConstants.sessionAutoCloseSeconds;
         _resetLocalTimer(timeout);
 
+        final newCount = (state as RecyclingSessionActive).rejectionCount + 1;
         emit(RecyclingSessionActive(
           session: current.copyWith(lastWsEvent: 'bottle_rejected'),
           timerSeconds: _secondsRemaining,
           bottleRejected: true,
+          rejectionCount: newCount,
         ));
         // Clear rejection warning after 2s
         Future.delayed(const Duration(seconds: 2), () {
@@ -255,6 +261,7 @@ class RecyclingBloc extends Bloc<RecyclingEvent, RecyclingState> {
                 session: s.session.copyWith(lastWsEvent: null),
                 timerSeconds: s.timerSeconds,
                 bottleRejected: false,
+                rejectionCount: s.rejectionCount,
               ));
             }
           }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/injection_container.dart';
 import 'core/utils/app_router.dart';
@@ -40,9 +41,10 @@ class RecySmartApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authBloc = sl<AuthBloc>();
-    final homeBloc = sl<HomeBloc>();
+    final authBloc     = sl<AuthBloc>();
+    final homeBloc     = sl<HomeBloc>();
     final recyclingBloc = sl<RecyclingBloc>();
+    final router       = AppRouter.router(authBloc);
 
     return MultiBlocProvider(
       providers: [
@@ -50,31 +52,42 @@ class RecySmartApp extends StatelessWidget {
         BlocProvider<HomeBloc>.value(value: homeBloc),
         BlocProvider<RecyclingBloc>.value(value: recyclingBloc),
       ],
-      child: BlocListener<AuthBloc, AuthState>(
-        // Global listener: handle session expiry from anywhere in the app
-        listener: (context, state) {
-          if (state is AuthSessionExpired) {
-            AppRouter.navigatorKey.currentState?.pushNamedAndRemoveUntil(
-              '/', (route) => false,
-            );
-            ScaffoldMessenger.of(
-                AppRouter.navigatorKey.currentContext!)
-                .showSnackBar(
-              const SnackBar(
-                content: Text(
-                    'Tu sesión ha expirado. Por favor inicia sesión nuevamente.'),
-                backgroundColor: AppColors.warning,
-                duration: Duration(seconds: 4),
-              ),
-            );
-          }
+      child: MaterialApp.router(
+        title: 'RecySmart',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        routerConfig: router,
+        // Use builder to wrap with global BlocListener AFTER router is set up
+        builder: (context, child) {
+          return BlocListener<AuthBloc, AuthState>(
+            listener: (context, state) {
+              if (state is AuthSessionExpired || state is AuthUnauthenticated) {
+                // Use go_router to navigate — compatible with MaterialApp.router
+                router.go(AppRoutes.login);
+
+                if (state is AuthSessionExpired) {
+                  // Show snackbar after navigation
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    final ctx = AppRouter.navigatorKey.currentContext;
+                    if (ctx != null && ctx.mounted) {
+                      ScaffoldMessenger.of(ctx).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Tu sesión expiró. Por favor inicia sesión nuevamente.',
+                          ),
+                          backgroundColor: AppColors.warning,
+                          duration: Duration(seconds: 4),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  });
+                }
+              }
+            },
+            child: child ?? const SizedBox.shrink(),
+          );
         },
-        child: MaterialApp.router(
-          title: 'RecySmart',
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.lightTheme,
-          routerConfig: AppRouter.router(authBloc),
-        ),
       ),
     );
   }
