@@ -20,13 +20,24 @@ class ApiClient {
   })  : _secureStorage = secureStorage,
         _prefs = prefs {
     _dio = Dio(
+      // BaseOptions(
+      //   baseUrl: kIsWeb ? AppConstants.baseUrl : 'http://localhost:3000/api',
+      //   connectTimeout: const Duration(seconds: 15),
+      //   receiveTimeout: const Duration(seconds: 15),
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //     'Accept': 'application/json',
+      //   },
+      // ),
       BaseOptions(
-        baseUrl: kIsWeb ? AppConstants.baseUrl : 'http://localhost:3000/api',
+        baseUrl: AppConstants.baseUrl,
         connectTimeout: const Duration(seconds: 15),
         receiveTimeout: const Duration(seconds: 15),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
+          // Bypass ngrok browser warning page in web
+          'ngrok-skip-browser-warning': 'true',
         },
       ),
     );
