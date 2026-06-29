@@ -4,34 +4,32 @@ import 'package:flutter/foundation.dart';
 class AppConstants {
   AppConstants._();
 
+  static String baseApiUrl = 'https://vascular-habitat-correct.ngrok-free.dev';
+  static String baseSocketURL =
+      'https://vascular-habitat-correct.ngrok-free.dev';
+
   // --- API ---
   static String get baseUrl {
-    return 'https://vascular-habitat-correct.ngrok-free.dev/api';
-    //   if (kIsWeb) {
-    //     return const String.fromEnvironment(
-    //       'API_URL',
-    //       defaultValue:
-    //     );
-    //   }
-    //   return Platform.isAndroid
-    //       ? 'http://10.0.2.2:3000/api'
-    //       : 'http://localhost:3000/api';
+    if (kIsWeb) {
+      return String.fromEnvironment('API_URL', defaultValue: baseApiUrl);
+    }
+    return Platform.isAndroid
+        ? 'http://10.0.2.2:3000/api'
+        : 'http://localhost:3000/api';
   }
 
   // Socket URL — sin /api al final
   static String get socketUrl {
-    return 'https://vascular-habitat-correct.ngrok-free.dev';
+    if (kIsWeb) {
+      return String.fromEnvironment(
+        'SOCKET_URL',
+        defaultValue: baseSocketURL,
+      );
+    }
+    return Platform.isAndroid
+        ? 'http://10.0.2.2:3000'
+        : 'http://localhost:3000';
   }
-
-  // if (kIsWeb) {
-  //   return const String.fromEnvironment(
-  //     'SOCKET_URL',
-  //     defaultValue:
-  //   );
-  // }
-  // return Platform.isAndroid
-  //     ? 'http://10.0.2.2:3000'
-  //     : 'http://localhost:3000';
 
   // Auth endpoints
   static const String registerEndpoint = '/auth/register';
