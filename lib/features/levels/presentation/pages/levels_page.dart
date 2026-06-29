@@ -27,7 +27,7 @@ class _LevelsView extends StatelessWidget {
   Widget build(BuildContext context) {
     final authState = context.watch<AuthBloc>().state;
     final user = authState is AuthAuthenticated ? authState.user : null;
-    final currentPoints = user?.wallet?.currentBalance ?? 0;
+    final currentPoints = user?.wallet?.lifetimeEarned ?? 0;
     final currentLevelName = user?.wallet?.level?.name;
 
     return Scaffold(
