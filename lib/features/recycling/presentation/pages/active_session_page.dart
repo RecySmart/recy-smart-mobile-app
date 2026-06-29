@@ -21,6 +21,7 @@ class ActiveSessionPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocListener<RecyclingBloc, RecyclingState>(
       listener: (context, state) {
+        // ── Navigate to summary when session ends ─────────────────────────
         if (state is RecyclingSessionCompleted) {
           context.pushReplacement(
             AppRoutes.sessionSummary,
@@ -31,6 +32,48 @@ class ActiveSessionPage extends StatelessWidget {
               'autoClosed': state.autoClosed,
             },
           );
+        }
+
+        // ── Show SnackBar on every bottle rejection ───────────────────────
+        if (state is RecyclingSessionActive && state.bottleRejected) {
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              SnackBar(
+                content: const Row(
+                  children: [
+                    Icon(Icons.warning_rounded, color: Colors.white, size: 20),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Objeto no reconocido',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                            ),
+                          ),
+                          Text(
+                            'Solo se aceptan botellas de plástico PET.',
+                            style: TextStyle(fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                backgroundColor: AppColors.error,
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 3),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              ),
+            );
         }
       },
       child: PopScope(
@@ -45,6 +88,9 @@ class ActiveSessionPage extends StatelessWidget {
               final timerSeconds = state is RecyclingSessionActive
                   ? state.timerSeconds
                   : 60;
+              final rejected = state is RecyclingSessionActive
+                  ? state.bottleRejected
+                  : false;
 
               return SafeArea(
                 child: Padding(
@@ -54,32 +100,43 @@ class ActiveSessionPage extends StatelessWidget {
                     children: [
                       const SizedBox(height: 16),
 
-                      // Header
+                      // ── Header ──────────────────────────────────────────
                       Row(
                         children: [
-                          Container(
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
                             width: 12,
                             height: 12,
-                            decoration: const BoxDecoration(
-                              color: AppColors.primary,
+                            decoration: BoxDecoration(
+                              color: rejected
+                                  ? AppColors.error
+                                  : AppColors.primary,
                               shape: BoxShape.circle,
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Text(
-                            'BIN CONNECTED',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 1,
+                          AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 300),
+                            child: Text(
+                              rejected
+                                  ? 'OBJETO NO RECONOCIDO'
+                                  : 'BIN CONNECTED',
+                              key: ValueKey(rejected),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                color: rejected
+                                    ? AppColors.error
+                                    : AppColors.primary,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 1,
+                              ),
                             ),
                           ),
                           const Spacer(),
                           Text(
-                            'ID: ${binId.toUpperCase()}',
+                            'ID: ${binId.length > 8 ? binId.substring(0, 8).toUpperCase() : binId.toUpperCase()}',
                             style: Theme.of(context)
                                 .textTheme
                                 .bodySmall
@@ -89,7 +146,7 @@ class ActiveSessionPage extends StatelessWidget {
                       ),
                       const SizedBox(height: 24),
 
-                      // Location
+                      // ── Location ────────────────────────────────────────
                       Center(
                         child: Text(
                           locationName,
@@ -99,24 +156,42 @@ class ActiveSessionPage extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Center(
-                        child: Text(
-                          'Ready to receive your items',
-                          style: Theme.of(context).textTheme.bodyMedium,
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 300),
+                          child: Text(
+                            rejected
+                                ? 'Solo botellas de plástico PET'
+                                : 'Listo para recibir tus botellas',
+                            key: ValueKey(rejected),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                              color: rejected
+                                  ? AppColors.error
+                                  : AppColors.textSecondary,
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 32),
 
-                      // Unlock icon
+                      // ── Status icon ─────────────────────────────────────
                       Center(
-                        child: Container(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
                           width: 120,
                           height: 120,
-                          decoration: const BoxDecoration(
-                            color: AppColors.primary,
+                          decoration: BoxDecoration(
+                            color: rejected
+                                ? AppColors.error
+                                : AppColors.primary,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(
-                            Icons.lock_open_rounded,
+                          child: Icon(
+                            rejected
+                                ? Icons.close_rounded
+                                : Icons.lock_open_rounded,
                             color: Colors.white,
                             size: 56,
                           ),
@@ -124,11 +199,14 @@ class ActiveSessionPage extends StatelessWidget {
                       ),
                       const SizedBox(height: 32),
 
-                      // Instruction card
-                      Container(
+                      // ── Info / Warning card ─────────────────────────────
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEEF2FF),
+                          color: rejected
+                              ? const Color(0xFFFEE2E2)
+                              : const Color(0xFFEEF2FF),
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: Row(
@@ -136,12 +214,19 @@ class ActiveSessionPage extends StatelessWidget {
                             Container(
                               width: 32,
                               height: 32,
-                              decoration: const BoxDecoration(
-                                color: AppColors.info,
+                              decoration: BoxDecoration(
+                                color: rejected
+                                    ? AppColors.error
+                                    : AppColors.info,
                                 shape: BoxShape.circle,
                               ),
-                              child: const Icon(Icons.info_outline_rounded,
-                                  color: Colors.white, size: 18),
+                              child: Icon(
+                                rejected
+                                    ? Icons.warning_rounded
+                                    : Icons.info_outline_rounded,
+                                color: Colors.white,
+                                size: 18,
+                              ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -149,19 +234,28 @@ class ActiveSessionPage extends StatelessWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Drop items one by one',
+                                    rejected
+                                        ? 'Objeto no válido'
+                                        : 'Deposita uno a la vez',
                                     style: Theme.of(context)
                                         .textTheme
                                         .titleMedium
-                                        ?.copyWith(color: AppColors.info),
+                                        ?.copyWith(
+                                      color: rejected
+                                          ? AppColors.error
+                                          : AppColors.info,
+                                    ),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    'Please wait for the green light on the bin before dropping the next bottle.',
+                                    rejected
+                                        ? 'El objeto ingresado no fue reconocido como botella PET. Intenta nuevamente.'
+                                        : 'Espera la luz verde del tacho antes de depositar la siguiente botella.',
                                     style: Theme.of(context)
                                         .textTheme
                                         .bodySmall
-                                        ?.copyWith(color: AppColors.textSecondary),
+                                        ?.copyWith(
+                                        color: AppColors.textSecondary),
                                   ),
                                 ],
                               ),
@@ -171,7 +265,7 @@ class ActiveSessionPage extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
 
-                      // Stats card
+                      // ── Stats card ──────────────────────────────────────
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
@@ -190,14 +284,14 @@ class ActiveSessionPage extends StatelessWidget {
                             _StatRow(
                               icon: Icons.liquor_rounded,
                               iconColor: AppColors.info,
-                              label: 'Bottles Dropped',
+                              label: 'Botellas depositadas',
                               value: '${session?.bottlesDropped ?? 0}',
                             ),
                             const SizedBox(height: 12),
                             _StatRow(
                               icon: Icons.monetization_on_rounded,
                               iconColor: AppColors.primary,
-                              label: 'Points Earned',
+                              label: 'Puntos ganados',
                               value: '+${session?.pointsEarned ?? 0}',
                               valueColor: AppColors.primary,
                             ),
@@ -207,27 +301,39 @@ class ActiveSessionPage extends StatelessWidget {
 
                       const Spacer(),
 
-                      // Auto-close timer
+                      // ── Timer ───────────────────────────────────────────
                       Center(
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.timer_outlined,
-                                size: 16, color: AppColors.textMuted),
+                            Icon(
+                              Icons.timer_outlined,
+                              size: 16,
+                              color: timerSeconds <= 10
+                                  ? AppColors.error
+                                  : AppColors.textMuted,
+                            ),
                             const SizedBox(width: 6),
                             Text(
-                              'Auto-closes in ${timerSeconds}s of inactivity',
+                              'Se cierra en ${timerSeconds}s de inactividad',
                               style: Theme.of(context)
                                   .textTheme
                                   .bodySmall
-                                  ?.copyWith(color: AppColors.textMuted),
+                                  ?.copyWith(
+                                color: timerSeconds <= 10
+                                    ? AppColors.error
+                                    : AppColors.textMuted,
+                                fontWeight: timerSeconds <= 10
+                                    ? FontWeight.w600
+                                    : FontWeight.w400,
+                              ),
                             ),
                           ],
                         ),
                       ),
                       const SizedBox(height: 12),
 
-                      // Finish button
+                      // ── Finish button ───────────────────────────────────
                       SizedBox(
                         width: double.infinity,
                         height: 56,
@@ -236,7 +342,7 @@ class ActiveSessionPage extends StatelessWidget {
                             backgroundColor: AppColors.secondary,
                           ),
                           icon: const Icon(Icons.arrow_forward_rounded),
-                          label: const Text('Finish Session'),
+                          label: const Text('Finalizar Sesión'),
                           onPressed: () => context
                               .read<RecyclingBloc>()
                               .add(RecyclingFinishSessionEvent()),
