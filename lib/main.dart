@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/injection_container.dart';
 import 'core/utils/app_router.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/home/presentation/bloc/home_bloc.dart';
 import 'features/recycling/presentation/bloc/recycling_bloc.dart';
+import 'features/notifications/presentation/bloc/app_notifications_bloc.dart';
+import 'features/notifications/presentation/widgets/global_notification_overlay.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,32 +42,42 @@ class RecySmartApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authBloc     = sl<AuthBloc>();
-    final homeBloc     = sl<HomeBloc>();
-    final recyclingBloc = sl<RecyclingBloc>();
-    final router       = AppRouter.router(authBloc);
+    final authBloc          = sl<AuthBloc>();
+    final homeBloc          = sl<HomeBloc>();
+    final recyclingBloc     = sl<RecyclingBloc>();
+    final notificationsBloc = sl<AppNotificationsBloc>();
+    final router            = AppRouter.router(authBloc);
 
     return MultiBlocProvider(
       providers: [
         BlocProvider<AuthBloc>.value(value: authBloc),
         BlocProvider<HomeBloc>.value(value: homeBloc),
         BlocProvider<RecyclingBloc>.value(value: recyclingBloc),
+        BlocProvider<AppNotificationsBloc>.value(value: notificationsBloc),
       ],
       child: MaterialApp.router(
         title: 'RecySmart',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         routerConfig: router,
-        // Use builder to wrap with global BlocListener AFTER router is set up
         builder: (context, child) {
           return BlocListener<AuthBloc, AuthState>(
             listener: (context, state) {
+              // Connect the persistent global socket as soon as we're authenticated
+              if (state is AuthAuthenticated) {
+                context
+                    .read<AppNotificationsBloc>()
+                    .add(AppNotificationsConnectEvent());
+              }
+
+              // Handle session expiry / logout — disconnect global socket too
               if (state is AuthSessionExpired || state is AuthUnauthenticated) {
-                // Use go_router to navigate — compatible with MaterialApp.router
+                context
+                    .read<AppNotificationsBloc>()
+                    .add(AppNotificationsDisconnectEvent());
                 router.go(AppRoutes.login);
 
                 if (state is AuthSessionExpired) {
-                  // Show snackbar after navigation
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     final ctx = AppRouter.navigatorKey.currentContext;
                     if (ctx != null && ctx.mounted) {
@@ -85,7 +96,10 @@ class RecySmartApp extends StatelessWidget {
                 }
               }
             },
-            child: child ?? const SizedBox.shrink(),
+            // Wrap the whole navigable app with the global notification overlay
+            child: GlobalNotificationOverlay(
+              child: child ?? const SizedBox.shrink(),
+            ),
           );
         },
       ),

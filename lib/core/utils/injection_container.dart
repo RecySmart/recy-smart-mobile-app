@@ -8,6 +8,7 @@ import '../../features/auth/domain/usecases/logout_usecase.dart';
 import '../../features/auth/domain/usecases/register_usecase.dart';
 import '../network/api_client.dart';
 import '../services/socket_service.dart';
+import '../services/global_notification_service.dart';
 import 'storage_service.dart';
 
 import '../../features/auth/data/datasources/auth_remote_datasource.dart' as auth_ds;
@@ -52,6 +53,8 @@ import '../../features/levels/domain/repositories/levels_repository.dart';
 import '../../features/levels/domain/usecases/get_levels_usecase.dart';
 import '../../features/levels/presentation/bloc/levels_bloc.dart';
 
+import '../../features/notifications/presentation/bloc/app_notifications_bloc.dart';
+
 final sl = GetIt.instance;
 
 Future<void> initDependencies() async {
@@ -67,7 +70,6 @@ Future<void> initDependencies() async {
     sl.registerLazySingleton<FlutterSecureStorage>(() => secureStorage!);
   }
 
-  // ── Unified Storage ───────────────────────────────────────────────────────
   sl.registerLazySingleton<StorageService>(
         () => StorageService(
       secure: kIsWeb ? null : secureStorage,
@@ -75,7 +77,6 @@ Future<void> initDependencies() async {
     ),
   );
 
-  // ── Core ──────────────────────────────────────────────────────────────────
   sl.registerLazySingleton<ApiClient>(
         () => ApiClient(
       secureStorage: kIsWeb ? null : secureStorage,
@@ -83,8 +84,13 @@ Future<void> initDependencies() async {
     ),
   );
 
-  // ── Socket.io service (one per session, not a true singleton) ─────────────
+  // Session-scoped socket (used during active recycling sessions)
   sl.registerFactory<SocketService>(() => SocketService());
+
+  // App-wide persistent socket (achievements, coupon validation, points)
+  sl.registerLazySingleton<GlobalNotificationService>(
+        () => GlobalNotificationService(),
+  );
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   sl.registerLazySingleton<auth_ds.AuthRemoteDataSource>(
@@ -106,7 +112,6 @@ Future<void> initDependencies() async {
       storageService: sl(),
     ),
   );
-  // Wire 401 → AuthBloc
   sl<ApiClient>().onUnauthorized = () {
     final authBloc = sl<AuthBloc>();
     if (!authBloc.isClosed) authBloc.add(AuthSessionExpiredEvent());
@@ -134,7 +139,7 @@ Future<void> initDependencies() async {
       startSession:  sl<StartSessionUseCase>(),
       endSession:    sl<EndSessionUseCase>(),
       homeBloc:      sl<HomeBloc>(),
-      socketService: sl<SocketService>(), // gets a new instance via registerFactory
+      socketService: sl<SocketService>(),
       storage:       sl<StorageService>(),
     ),
   );
@@ -191,4 +196,13 @@ Future<void> initDependencies() async {
   );
   sl.registerLazySingleton(() => GetLevelsUseCase(sl()));
   sl.registerFactory(() => LevelsBloc(sl()));
+
+  // ── App-wide notifications (achievements + coupon validation) ─────────────
+  sl.registerLazySingleton(
+        () => AppNotificationsBloc(
+      service: sl<GlobalNotificationService>(),
+      storage: sl<StorageService>(),
+      homeBloc: sl<HomeBloc>(),
+    ),
+  );
 }
