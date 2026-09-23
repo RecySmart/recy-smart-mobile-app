@@ -3,13 +3,25 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/injection_container.dart';
-import '../../../auth/domain/entities/user.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../domain/entities/level.dart';
 import '../bloc/levels_bloc.dart';
 
-class LevelsPage extends StatelessWidget {
+class LevelsPage extends StatefulWidget {
   const LevelsPage({super.key});
+
+  @override
+  State<LevelsPage> createState() => _LevelsPageState();
+}
+
+class _LevelsPageState extends State<LevelsPage> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<AuthBloc>().add(AuthGetProfileEvent());
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -122,11 +134,7 @@ class _LevelsContent extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [AppColors.primary, AppColors.primaryDark],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            color: AppColors.secondary,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Column(
@@ -167,7 +175,7 @@ class _LevelsContent extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -186,13 +194,17 @@ class _LevelsContent extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Hacia ${next!.name}',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodySmall
-                          ?.copyWith(color: Colors.white70),
+                    Flexible(
+                      child: Text(
+                        'Hacia ${next.name}',
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(color: Colors.white70),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
+                    const SizedBox(width: 8),
                     Text(
                       '$pointsToNext pts restantes',
                       style: Theme.of(context)
@@ -218,7 +230,7 @@ class _LevelsContent extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -275,6 +287,7 @@ class _LevelsContent extends StatelessWidget {
             isUnlocked: isUnlocked,
             isLast: isLast,
             currentPoints: currentPoints,
+            nextLevelMin: nextLevelPoints,
           );
         }),
       ],
@@ -297,6 +310,7 @@ class _LevelTile extends StatelessWidget {
   final bool isUnlocked;
   final bool isLast;
   final int currentPoints;
+  final int? nextLevelMin;
 
   const _LevelTile({
     required this.level,
@@ -305,6 +319,7 @@ class _LevelTile extends StatelessWidget {
     required this.isUnlocked,
     required this.isLast,
     required this.currentPoints,
+    this.nextLevelMin,
   });
 
   Color get _tileColor {
@@ -410,6 +425,7 @@ class _LevelTile extends StatelessWidget {
                       _MiniProgressBar(
                         currentPoints: currentPoints,
                         levelMin: level.minPointsRequired,
+                        nextLevelMin: nextLevelMin ?? (level.minPointsRequired + 100),
                       ),
                     ],
                   ],
@@ -426,7 +442,7 @@ class _LevelTile extends StatelessWidget {
                 color: isCurrentLevel
                     ? AppColors.primary
                     : isUnlocked
-                    ? AppColors.primary.withOpacity(0.5)
+                    ? AppColors.primary.withValues(alpha: 0.5)
                     : AppColors.textMuted,
                 size: 22,
               ),
@@ -444,7 +460,7 @@ class _LevelTile extends StatelessWidget {
                 width: 2,
                 height: 8,
                 color: isUnlocked
-                    ? AppColors.primary.withOpacity(0.3)
+                    ? AppColors.primary.withValues(alpha: 0.3)
                     : AppColors.surfaceGrey,
               ),
             ),
@@ -457,19 +473,23 @@ class _LevelTile extends StatelessWidget {
 class _MiniProgressBar extends StatelessWidget {
   final int currentPoints;
   final int levelMin;
+  final int nextLevelMin;
 
   const _MiniProgressBar({
     required this.currentPoints,
     required this.levelMin,
+    required this.nextLevelMin,
   });
 
   @override
   Widget build(BuildContext context) {
+    final range = nextLevelMin - levelMin;
+    final progress = range > 0 ? (currentPoints - levelMin) / range : 1.0;
+    
     return ClipRRect(
       borderRadius: BorderRadius.circular(4),
       child: LinearProgressIndicator(
-        value: (currentPoints - levelMin) /
-            (levelMin > 0 ? levelMin : 100),
+        value: progress.clamp(0.0, 1.0),
         backgroundColor: AppColors.surfaceGrey,
         color: AppColors.primary,
         minHeight: 6,

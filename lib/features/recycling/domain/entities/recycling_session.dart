@@ -45,3 +45,27 @@ class RecyclingSession extends Equatable {
 }
 
 enum SessionStatus { active, completed, autoclosed, error }
+
+class RecyclingSessionSnapshot extends Equatable {
+  final String sessionId;
+  final String smartBinId;
+  final String status;
+  final int bottlesAccepted;
+  final int pointsCalculated;
+  final DateTime? expiresAt;
+
+  const RecyclingSessionSnapshot({
+    required this.sessionId,
+    required this.smartBinId,
+    required this.status,
+    required this.bottlesAccepted,
+    required this.pointsCalculated,
+    this.expiresAt,
+  });
+
+  bool get isActive => status == 'IN_PROGRESS';
+
+  @override
+  List<Object?> get props =>
+      [sessionId, smartBinId, status, bottlesAccepted, pointsCalculated, expiresAt];
+}

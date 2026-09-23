@@ -42,52 +42,72 @@ class _QrScannerPageState extends State<QrScannerPage> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) => Padding(
-        padding: EdgeInsets.only(
-          left: 24,
-          right: 24,
-          top: 24,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Enter Bin Code', style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: 4),
-            Text(
-              'Type the code printed on the smart bin.',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: controller,
-              autofocus: true,
-              textCapitalization: TextCapitalization.characters,
-              decoration: const InputDecoration(
-                hintText: 'e.g. BIN-001',
-                prefixIcon: Icon(Icons.qr_code_rounded),
+      builder: (_) {
+        final formKey = GlobalKey<FormState>();
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 24,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+          ),
+          child: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Ingresar Código del Tacho', style: Theme.of(context).textTheme.headlineSmall),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Ingresa el código impreso en el tacho inteligente.',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 20),
+                  TextFormField(
+                    controller: controller,
+                    autofocus: true,
+                    textCapitalization: TextCapitalization.characters,
+                    decoration: const InputDecoration(
+                      hintText: 'ej. BIN-001',
+                      prefixIcon: Icon(Icons.qr_code_rounded),
+                    ),
+                    validator: (v) {
+                      if (v == null || v.trim().isEmpty) return 'El código es requerido';
+                      return null;
+                    },
+                    onFieldSubmitted: (_) {
+                      if (!formKey.currentState!.validate()) return;
+                      Navigator.pop(context);
+                      _scanned = true;
+                      context.read<RecyclingBloc>().add(
+                        RecyclingQrScannedEvent(controller.text.trim()),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        if (!formKey.currentState!.validate()) return;
+                        Navigator.pop(context);
+                        _scanned = true;
+                        context.read<RecyclingBloc>().add(
+                          RecyclingQrScannedEvent(controller.text.trim()),
+                        );
+                      },
+                      child: const Text('Conectar al Tacho'),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                onPressed: () {
-                  if (controller.text.trim().isEmpty) return;
-                  Navigator.pop(context);
-                  _scanned = true;
-                  context.read<RecyclingBloc>().add(
-                    RecyclingQrScannedEvent(controller.text.trim()),
-                  );
-                },
-                child: const Text('Connect to Bin'),
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -123,6 +143,31 @@ class _QrScannerPageState extends State<QrScannerPage> {
             MobileScanner(
               controller: _scannerController,
               onDetect: _onDetect,
+              errorBuilder: (context, error, child) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.camera_alt_outlined, color: Colors.white70, size: 48),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No se pudo iniciar la cámara o no hay permisos.',
+                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton.icon(
+                          onPressed: _showManualEntry,
+                          icon: const Icon(Icons.keyboard),
+                          label: const Text('Ingresar código manual'),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
 
             // Top bar
@@ -136,16 +181,16 @@ class _QrScannerPageState extends State<QrScannerPage> {
                       icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
                       onPressed: () => context.pop(),
                     ),
-                    Text(
-                      'Connect Bin',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: Colors.white,
+                    Expanded(
+                      child: Text(
+                        'Conectar punto de reciclaje',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: Colors.white,
+                        ),
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.help_outline_rounded, color: Colors.white),
-                      onPressed: () {},
-                    ),
+                    const SizedBox(width: 48),
                   ],
                 ),
               ),
@@ -163,7 +208,7 @@ class _QrScannerPageState extends State<QrScannerPage> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      'Point camera at the QR code on the bin',
+                      'Apunta la cámara al código QR del punto de reciclaje',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Colors.white,
                       ),
@@ -222,7 +267,7 @@ class _QrScannerPageState extends State<QrScannerPage> {
                                   ),
                                   const SizedBox(width: 10),
                                   Text(
-                                    'Connecting to bin...',
+                                    'Conectando con el punto...',
                                     style: Theme.of(context)
                                         .textTheme
                                         .bodyMedium
@@ -252,7 +297,7 @@ class _QrScannerPageState extends State<QrScannerPage> {
                                 ),
                                 const SizedBox(width: 10),
                                 Text(
-                                  'Searching for code...',
+                                  'Buscando el código...',
                                   style: Theme.of(context)
                                       .textTheme
                                       .bodyMedium
@@ -272,7 +317,7 @@ class _QrScannerPageState extends State<QrScannerPage> {
                             backgroundColor: AppColors.secondary,
                           ),
                           icon: const Icon(Icons.keyboard_rounded),
-                          label: const Text('Enter code manually'),
+                          label: const Text('Ingresar código manualmente'),
                           onPressed: _showManualEntry,
                         ),
                       ),
@@ -301,10 +346,12 @@ class _ScanLineState extends State<_ScanLine>
   @override
   void initState() {
     super.initState();
+    final disableAnimations = WidgetsBinding.instance.platformDispatcher.accessibilityFeatures.disableAnimations;
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
+    );
+    if (!disableAnimations) _controller.repeat(reverse: true);
     _animation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );

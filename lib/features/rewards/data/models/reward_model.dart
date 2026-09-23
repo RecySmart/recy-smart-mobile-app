@@ -20,7 +20,7 @@ class RewardModel extends Reward {
     return RewardModel(
       id: json['id'] as String,
       companyId: json['companyId'] as String? ?? '',
-      companyName: company['companyName'] as String? ?? 'Partner',
+      companyName: company['companyName'] as String? ?? 'Empresa aliada',
       companyLogo: company['logoUrl'] as String?,
       title: json['title'] as String,
       description: json['description'] as String,
@@ -34,13 +34,13 @@ class RewardModel extends Reward {
 
   static String _inferCategory(String title) {
     final t = title.toLowerCase();
-    if (t.contains('coffee') || t.contains('food') || t.contains('drink')) {
-      return 'Food & Drink';
+    if (t.contains('coffee') || t.contains('food') || t.contains('drink') || t.contains('café') || t.contains('comida')) {
+      return 'Comida y bebidas';
     }
-    if (t.contains('bus') || t.contains('transport') || t.contains('ride')) {
-      return 'Transport';
+    if (t.contains('bus') || t.contains('transport') || t.contains('ride') || t.contains('viaje') || t.contains('pasaje')) {
+      return 'Transporte';
     }
-    if (t.contains('eco') || t.contains('green') || t.contains('plant')) {
+    if (t.contains('eco') || t.contains('green') || t.contains('plant') || t.contains('verde') || t.contains('planta')) {
       return 'Eco';
     }
     return 'General';
@@ -65,8 +65,8 @@ class UserCouponModel extends UserCoupon {
     return UserCouponModel(
       id: json['id'] as String,
       rewardId: json['rewardId'] as String,
-      rewardTitle: reward['title'] as String? ?? 'Reward',
-      companyName: company['companyName'] as String? ?? 'Partner',
+      rewardTitle: reward['title'] as String? ?? 'Recompensa',
+      companyName: company['companyName'] as String? ?? 'Empresa aliada',
       qrCode: json['qrCode'] as String,
       status: json['status'] as String,
       expiresAt: DateTime.parse(json['expiresAt'] as String),

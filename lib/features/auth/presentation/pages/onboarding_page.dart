@@ -22,23 +22,23 @@ class _OnboardingSlide {
 
 const _slides = [
   _OnboardingSlide(
-    title: 'Find Smart Bins Near You',
+    title: 'Encuentra Tachos Inteligentes Cerca de Ti',
     description:
-    'Use our interactive map to locate the nearest RecySmart bins in your city and check their available capacity.',
+    'Usa nuestro mapa interactivo para localizar los tachos RecySmart más cercanos en tu ciudad y revisar su capacidad disponible.',
     icon: Icons.map_rounded,
     iconBgColor: AppColors.primaryLight,
   ),
   _OnboardingSlide(
-    title: 'Scan to Unlock',
+    title: 'Escanea para Desbloquear',
     description:
-    'Simply scan the QR code on the physical bin to start your secure recycling session instantly.',
+    'Simplemente escanea el código QR en el tacho físico para comenzar tu sesión de reciclaje segura al instante.',
     icon: Icons.qr_code_scanner_rounded,
     iconBgColor: Color(0xFFE8EAF6),
   ),
   _OnboardingSlide(
-    title: 'Earn Eco-Rewards',
+    title: 'Gana Eco-Recompensas',
     description:
-    'Drop your plastic bottles, reduce your carbon footprint, and earn points to redeem for exclusive discounts.',
+        'Deposita botellas PET aceptadas en el prototipo, acumula EcoPuntos y canjéalos por recompensas disponibles.',
     icon: Icons.card_giftcard_rounded,
     iconBgColor: Color(0xFFFFFBE6),
   ),
@@ -82,7 +82,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 child: TextButton(
                   onPressed: _finish,
                   child: Text(
-                    'Skip',
+                    'Omitir',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -128,23 +128,34 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   if (_currentPage == _slides.length - 1)
                     ElevatedButton(
                       onPressed: _finish,
-                      child: const Text('Get Started'),
+                      child: const Text('Comenzar'),
                     )
                   else
-                    GestureDetector(
-                      onTap: () => _controller.nextPage(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                      ),
-                      child: Container(
-                        width: 56,
-                        height: 56,
-                        decoration: const BoxDecoration(
-                          color: AppColors.secondary,
-                          shape: BoxShape.circle,
+                    Semantics(
+                      label: 'Siguiente diapositiva',
+                      button: true,
+                      child: GestureDetector(
+                        onTap: () {
+                          final disable = MediaQuery.disableAnimationsOf(context);
+                          if (disable) {
+                            _controller.jumpToPage(_currentPage + 1);
+                          } else {
+                            _controller.nextPage(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
+                          }
+                        },
+                        child: Container(
+                          width: 56,
+                          height: 56,
+                          decoration: const BoxDecoration(
+                            color: AppColors.secondary,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.arrow_forward_rounded,
+                              color: Colors.white),
                         ),
-                        child: const Icon(Icons.arrow_forward_rounded,
-                            color: Colors.white),
                       ),
                     ),
                 ],

@@ -113,7 +113,7 @@ class _NotificationBannerState extends State<_NotificationBanner>
             borderRadius: BorderRadius.circular(18),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.2),
+                color: Colors.black.withValues(alpha: 0.2),
                 blurRadius: 20,
                 offset: const Offset(0, 8),
               ),
@@ -141,7 +141,7 @@ class _AchievementContent extends StatelessWidget {
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
+            color: Colors.white.withValues(alpha: 0.2),
             shape: BoxShape.circle,
           ),
           child: Center(
@@ -200,7 +200,7 @@ class _CouponContent extends StatelessWidget {
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
+            color: Colors.white.withValues(alpha: 0.2),
             shape: BoxShape.circle,
           ),
           child: const Center(

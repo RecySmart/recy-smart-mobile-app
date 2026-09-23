@@ -94,19 +94,19 @@ class _HomeAppBar extends StatelessWidget {
       title: BlocBuilder<AuthBloc, AuthState>(
         builder: (context, state) {
           final name =
-          state is AuthAuthenticated ? state.user.name : 'Eco-Hero';
+          state is AuthAuthenticated ? state.user.name : 'Ecohéroe';
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'WELCOME BACK',
+                'BIENVENIDO',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: AppColors.textMuted,
                   letterSpacing: 1.2,
                 ),
               ),
               Text(
-                'Hi, ${name.split(' ').first.toUpperCase()}!',
+                '¡Hola, ${name.split(' ').first.toUpperCase()}!',
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
             ],
@@ -123,11 +123,16 @@ class _HomeAppBar extends StatelessWidget {
           padding: const EdgeInsets.only(right: 8),
           child: GestureDetector(
             onTap: () => context.go(AppRoutes.profile),
-            child: const CircleAvatar(
-              radius: 18,
-              backgroundColor: AppColors.surfaceGrey,
-              child: Icon(Icons.person_outline_rounded,
-                  color: AppColors.textSecondary, size: 20),
+            child: Container(
+              width: 48,
+              height: 48,
+              alignment: Alignment.center,
+              child: const CircleAvatar(
+                radius: 18,
+                backgroundColor: AppColors.surfaceGrey,
+                child: Icon(Icons.person_outline_rounded,
+                    color: AppColors.textSecondary, size: 20),
+              ),
             ),
           ),
         ),
@@ -148,18 +153,21 @@ class _BalanceCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.primary, AppColors.primaryDark],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: AppColors.secondary,
         borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'TOTAL BALANCE',
+            'SALDO TOTAL',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: Colors.white70,
               letterSpacing: 1.2,
@@ -191,34 +199,39 @@ class _BalanceCard extends StatelessWidget {
           const SizedBox(height: 12),
 
           // ── Clickeable banner → /levels ───────────────────────────────────
-          GestureDetector(
-            onTap: () => context.push(AppRoutes.levels),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white24),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.emoji_events_rounded,
-                      color: Colors.white, size: 18),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      data.pointsToNextReward > 0
-                          ? 'Just ${data.pointsToNextReward} points away from your next level'
-                          : '¡Has alcanzado el nivel máximo! 🏆',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.white,
+          Semantics(
+            button: true,
+            label: 'Ver detalles de nivel y progreso',
+            child: GestureDetector(
+              onTap: () => context.push(AppRoutes.levels),
+              child: Container(
+                constraints: const BoxConstraints(minHeight: 48),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.emoji_events_rounded,
+                        color: Colors.white, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        data.pointsToNextReward > 0
+                            ? 'A solo ${data.pointsToNextReward} puntos de tu próximo nivel'
+                            : '¡Has alcanzado el nivel máximo! 🏆',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.white,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  const Icon(Icons.chevron_right_rounded,
-                      color: Colors.white70, size: 18),
-                ],
+                    const SizedBox(width: 4),
+                    const Icon(Icons.chevron_right_rounded,
+                        color: Colors.white70, size: 18),
+                  ],
+                ),
               ),
             ),
           ),
@@ -247,7 +260,7 @@ class _ScanButton extends StatelessWidget {
                 color: Colors.white, size: 22),
             const SizedBox(width: 10),
             Text(
-              'Scan QR Code',
+              'Escanear QR',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
@@ -273,7 +286,7 @@ class _StatsRow extends StatelessWidget {
             icon: Icons.liquor_rounded,
             iconColor: AppColors.info,
             value: '${data.totalBottles}',
-            label: 'Recycled Bottles',
+            label: 'Botellas recicladas',
           ),
         ),
         const SizedBox(width: 12),
@@ -282,7 +295,7 @@ class _StatsRow extends StatelessWidget {
             icon: Icons.cloud_outlined,
             iconColor: AppColors.textSecondary,
             value: '${data.co2Saved.toStringAsFixed(2)} kg',
-            label: 'CO2 Saved',
+            label: 'CO₂ ahorrado',
           ),
         ),
       ],
@@ -346,15 +359,22 @@ class _RecentActivitySection extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Recent Activity',
+            Text('Actividad Reciente',
                 style: Theme.of(context).textTheme.headlineSmall),
-            GestureDetector(
-              onTap: () => context.push(AppRoutes.transactionHistory),
-              child: Text(
-                'See All',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w600,
+            Semantics(
+              button: true,
+              label: 'Ver todo el historial de actividad',
+              child: GestureDetector(
+                onTap: () => context.push(AppRoutes.transactionHistory),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                  child: Text(
+                    'Ver Todo',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -375,7 +395,7 @@ class _RecentActivitySection extends StatelessWidget {
                     size: 40, color: AppColors.textMuted),
                 const SizedBox(height: 8),
                 Text(
-                  'No activity yet. Start recycling!',
+                  'Aún no hay actividad. ¡Comienza a reciclar!',
                   style: Theme.of(context).textTheme.bodyMedium,
                   textAlign: TextAlign.center,
                 ),
@@ -430,7 +450,7 @@ class _ActivityTile extends StatelessWidget {
         ),
       ),
       title: Text(
-        isDeposit ? 'PET Bottle Accepted' : 'Reward Redeemed',
+        isDeposit ? 'Botella PET aceptada' : 'Recompensa canjeada',
         style: Theme.of(context).textTheme.titleMedium,
       ),
       subtitle: Text(
@@ -453,9 +473,9 @@ class _ActivityTile extends StatelessWidget {
 
   String _formatTime(DateTime dt) {
     final diff = DateTime.now().difference(dt);
-    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
-    if (diff.inHours < 24) return '${diff.inHours}h ago';
-    return DateFormat('MMM d').format(dt);
+    if (diff.inMinutes < 60) return 'hace ${diff.inMinutes} min';
+    if (diff.inHours < 24) return 'hace ${diff.inHours} h';
+    return DateFormat('dd/MM/yyyy').format(dt);
   }
 }
 
@@ -479,7 +499,7 @@ class _ErrorView extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium),
             const SizedBox(height: 24),
-            ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
+            ElevatedButton(onPressed: onRetry, child: const Text('Reintentar')),
           ],
         ),
       ),

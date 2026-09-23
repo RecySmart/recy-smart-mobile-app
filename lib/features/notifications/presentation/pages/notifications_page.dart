@@ -23,40 +23,7 @@ class _Notification {
 class NotificationsPage extends StatelessWidget {
   const NotificationsPage({super.key});
 
-  static const _notifications = [
-    _Notification(
-      title: 'Points Added Successfully!',
-      body: 'You earned +30 points from your recent recycling session at Tambo - Carabayllo.',
-      time: 'Just now',
-      isNew: true,
-      accentColor: AppColors.info,
-      icon: Icons.monetization_on_rounded,
-    ),
-    _Notification(
-      title: 'Session Auto-Closed',
-      body: 'Your session was locked due to 60 seconds of inactivity. Your points were safely saved.',
-      time: '10 mins ago',
-      isNew: true,
-      accentColor: AppColors.warning,
-      icon: Icons.timer_off_rounded,
-    ),
-    _Notification(
-      title: 'New Reward Available!',
-      body: 'You now have enough points to redeem a Free Medium Coffee. Check the Rewards store!',
-      time: 'Yesterday, 2:30 PM',
-      isNew: false,
-      accentColor: AppColors.primary,
-      icon: Icons.card_giftcard_rounded,
-    ),
-    _Notification(
-      title: 'Rank Up: Gold Recycler',
-      body: "Congratulations! You've saved over 15kg of CO2 and reached the Gold tier.",
-      time: 'Oct 12, 10:15 AM',
-      isNew: false,
-      accentColor: AppColors.tierGold,
-      icon: Icons.emoji_events_rounded,
-    ),
-  ];
+  static const List<_Notification> _notifications = [];
 
   @override
   Widget build(BuildContext context) {
@@ -66,35 +33,30 @@ class NotificationsPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
-        title: const Text('Notifications'),
+        title: const Text('Notificaciones'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
         ),
-        actions: [
-          TextButton(
-            onPressed: () {},
-            child: Text(
-              'Mark all read',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.primary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         children: [
+          if (_notifications.isEmpty)
+            const Padding(
+              padding: EdgeInsets.only(top: 48),
+              child: Center(
+                child: Text('No hay notificaciones disponibles.'),
+              ),
+            ),
           if (newItems.isNotEmpty) ...[
-            _SectionHeader(label: 'NEW'),
+            const _SectionHeader(label: 'NUEVO'),
             const SizedBox(height: 8),
             ...newItems.map((n) => _NotificationTile(notification: n)),
             const SizedBox(height: 16),
           ],
           if (earlierItems.isNotEmpty) ...[
-            _SectionHeader(label: 'EARLIER'),
+            const _SectionHeader(label: 'ANTERIORES'),
             const SizedBox(height: 8),
             ...earlierItems.map((n) => _NotificationTile(notification: n)),
           ],
@@ -147,7 +109,7 @@ class _NotificationTile extends StatelessWidget {
         const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: CircleAvatar(
           radius: 22,
-          backgroundColor: notification.accentColor.withOpacity(0.15),
+          backgroundColor: notification.accentColor.withValues(alpha: 0.15),
           child: Icon(notification.icon,
               color: notification.accentColor, size: 20),
         ),

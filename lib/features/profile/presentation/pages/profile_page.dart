@@ -133,7 +133,7 @@ class _ProfileContent extends StatelessWidget {
         slivers: [
           SliverToBoxAdapter(
             child: Container(
-              color: AppColors.primary,
+              color: AppColors.secondary,
               padding: EdgeInsets.only(
                 top: MediaQuery.of(context).padding.top + 16,
                 left: 20,
@@ -143,21 +143,11 @@ class _ProfileContent extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Perfil',
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineSmall
-                              ?.copyWith(color: Colors.white)),
-                      IconButton(
-                        icon: const Icon(Icons.settings_outlined,
-                            color: Colors.white),
-                        onPressed: () {},
-                      ),
-                    ],
-                  ),
+                  Text('Perfil',
+                      style: Theme.of(context)
+                          .textTheme
+                          .headlineSmall
+                          ?.copyWith(color: Colors.white)),
                   const SizedBox(height: 16),
                   Row(
                     children: [
@@ -325,17 +315,27 @@ class _ProfileContent extends StatelessWidget {
                     icon: Icons.notifications_outlined,
                     iconColor: const Color(0xFFEDE7F6),
                     label: 'Notificaciones',
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Configuración de notificaciones próximamente.')),
+                      );
+                    },
                     trailing: Switch(
                       value: true,
-                      onChanged: (_) {},
+                      onChanged: null, // Disabled
                       activeColor: AppColors.primary,
                     ),
                   ),
-                  const _MenuItem(
+                  _MenuItem(
                     icon: Icons.language_rounded,
-                    iconColor: Color(0xFFFFF3E0),
+                    iconColor: const Color(0xFFFFF3E0),
                     label: 'Idioma',
                     trailingText: 'Español',
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Cambio de idioma próximamente.')),
+                      );
+                    },
                   ),
                 ]),
                 const SizedBox(height: 20),

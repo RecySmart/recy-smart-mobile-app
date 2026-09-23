@@ -31,3 +31,25 @@ class RecyclingSessionModel extends RecyclingSession {
     );
   }
 }
+
+class RecyclingSessionSnapshotModel extends RecyclingSessionSnapshot {
+  const RecyclingSessionSnapshotModel({
+    required super.sessionId,
+    required super.smartBinId,
+    required super.status,
+    required super.bottlesAccepted,
+    required super.pointsCalculated,
+    super.expiresAt,
+  });
+
+  factory RecyclingSessionSnapshotModel.fromJson(Map<String, dynamic> json) {
+    return RecyclingSessionSnapshotModel(
+      sessionId: json['sessionId'] as String,
+      smartBinId: json['smartBinId'] as String,
+      status: json['status'] as String,
+      bottlesAccepted: (json['bottlesAccepted'] as num).toInt(),
+      pointsCalculated: (json['pointsCalculated'] as num).toInt(),
+      expiresAt: DateTime.tryParse(json['expiresAt'] as String? ?? ''),
+    );
+  }
+}

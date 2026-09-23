@@ -42,12 +42,12 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   String? _validatePassword(String? v) {
-    if (v == null || v.isEmpty) return 'Password is required';
-    if (v.length < 8) return 'At least 8 characters';
-    if (!v.contains(RegExp(r'[A-Z]'))) return 'Needs 1 uppercase letter';
-    if (!v.contains(RegExp(r'[0-9]'))) return 'Needs 1 number';
+    if (v == null || v.isEmpty) return 'Ingresa una contraseña';
+    if (v.length < 8) return 'Debe tener al menos 8 caracteres';
+    if (!v.contains(RegExp(r'[A-Z]'))) return 'Debe tener una letra mayúscula';
+    if (!v.contains(RegExp(r'[0-9]'))) return 'Debe tener un número';
     if (!v.contains(RegExp(r'[!@#\$&*~%^()_\-+=]'))) {
-      return 'Needs 1 symbol (!@#\$&*~%^)';
+      return 'Debe tener un símbolo (!@#\$&*~%^)';
     }
     return null;
   }
@@ -81,7 +81,7 @@ class _RegisterPageState extends State<RegisterPage> {
             body: SafeArea(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Form(
+                child: AutofillGroup(child: Form(
                   key: _formKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -98,41 +98,41 @@ class _RegisterPageState extends State<RegisterPage> {
                             size: 44, color: AppColors.primary),
                       ),
                       const SizedBox(height: 24),
-                      Text('Create Account',
+                      Text('Crear cuenta',
                           style: Theme.of(context).textTheme.displaySmall),
                       const SizedBox(height: 8),
                       Text(
-                        'Join RecySmart today and start earning\nrewards for saving the planet.',
+                        'Únete a RecySmart y gana recompensas\npor reciclar botellas PET.',
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                       const SizedBox(height: 32),
                       AppTextField(
                         controller: _nameController,
-                        label: 'Full Name',
-                        hint: 'John Doe',
-                        prefixIcon: Icons.person_outline_rounded,
+                        label: 'Nombre completo',
+                        hint: 'Juan Pérez',
+                        autofillHints: const [AutofillHints.name], textInputAction: TextInputAction.next, prefixIcon: Icons.person_outline_rounded,
                         validator: (v) => (v == null || v.isEmpty)
-                            ? 'Name is required'
+                            ? 'Ingresa tu nombre'
                             : null,
                       ),
                       const SizedBox(height: 16),
                       AppTextField(
                         controller: _emailController,
-                        label: 'Email',
-                        hint: 'your@email.com',
-                        keyboardType: TextInputType.emailAddress,
+                        label: 'Correo electrónico',
+                        hint: 'tu@correo.com',
+                        keyboardType: TextInputType.emailAddress, autofillHints: const [AutofillHints.email], textInputAction: TextInputAction.next,
                         prefixIcon: Icons.email_outlined,
                         validator: (v) {
-                          if (v == null || v.isEmpty) return 'Email is required';
-                          if (!v.contains('@')) return 'Enter a valid email';
+                          if (v == null || v.isEmpty) return 'Ingresa tu correo electrónico';
+                          if (!v.contains('@')) return 'Ingresa un correo válido';
                           return null;
                         },
                       ),
                       const SizedBox(height: 16),
                       AppTextField(
-                        controller: _passwordController,
-                        label: 'Password',
+                        controller: _passwordController, autofillHints: const [AutofillHints.newPassword], textInputAction: TextInputAction.next,
+                        label: 'Contraseña',
                         hint: '••••••••••',
                         obscureText: _obscurePassword,
                         prefixIcon: Icons.lock_outline_rounded,
@@ -150,8 +150,8 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                       const SizedBox(height: 16),
                       AppTextField(
-                        controller: _confirmController,
-                        label: 'Confirm Password',
+                        controller: _confirmController, autofillHints: const [AutofillHints.newPassword], textInputAction: TextInputAction.done, onFieldSubmitted: (_) => _submit(),
+                        label: 'Confirmar contraseña',
                         hint: '••••••••••',
                         obscureText: _obscureConfirm,
                         prefixIcon: Icons.lock_outline_rounded,
@@ -167,7 +167,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         ),
                         validator: (v) {
                           if (v != _passwordController.text) {
-                            return 'Passwords do not match';
+                            return 'Las contraseñas no coinciden';
                           }
                           return null;
                         },
@@ -187,19 +187,19 @@ class _RegisterPageState extends State<RegisterPage> {
                               color: Colors.white,
                             ),
                           )
-                              : const Text('Sign Up'),
+                              : const Text('Registrarse'),
                         ),
                       ),
                       const SizedBox(height: 24),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text('Already have an account? ',
+                          Text('¿Ya tienes una cuenta? ',
                               style: Theme.of(context).textTheme.bodyMedium),
                           GestureDetector(
                             onTap: () => context.go(AppRoutes.login),
                             child: Text(
-                              'Log In',
+                              'Inicia sesión',
                               style: Theme.of(context)
                                   .textTheme
                                   .bodyMedium
@@ -213,6 +213,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                       const SizedBox(height: 32),
                     ],
+                  ),
                   ),
                 ),
               ),

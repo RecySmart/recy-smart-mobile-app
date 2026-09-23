@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../theme/app_theme.dart';
 import '../utils/app_router.dart';
-import '../../features/map/presentation/pages/map_page.dart';
 
 class MainScaffold extends StatelessWidget {
   final Widget child;
@@ -32,15 +30,18 @@ class MainScaffold extends StatelessWidget {
         decoration: const BoxDecoration(
           border: Border(top: BorderSide(color: Color(0xFFE5E7EB), width: 1)),
         ),
-        child: BottomNavigationBar(
-          currentIndex: currentIndex,
-          onTap: (i) => context.go(_tabs[i].route),
-          items: _tabs
-              .map((t) => BottomNavigationBarItem(
-            icon: Icon(t.icon),
-            label: t.label,
-          ))
-              .toList(),
+        child: SafeArea(
+          bottom: true,
+          child: BottomNavigationBar(
+            currentIndex: currentIndex,
+            onTap: (i) => context.go(_tabs[i].route),
+            items: _tabs
+                .map((t) => BottomNavigationBarItem(
+              icon: Icon(t.icon),
+              label: t.label,
+            ))
+                .toList(),
+          ),
         ),
       ),
     );

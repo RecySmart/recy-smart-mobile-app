@@ -1,30 +1,42 @@
 import 'package:flutter/foundation.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import '../constants/app_constants.dart';
+import '../utils/storage_service.dart';
 
 typedef SessionUpdateCallback = void Function(Map<String, dynamic> data);
 typedef PointsUpdateCallback  = void Function(Map<String, dynamic> data);
 typedef AchievementCallback   = void Function(Map<String, dynamic> data);
 
 class SocketService {
+  final StorageService _storage;
   io.Socket? _socket;
   bool _isConnected = false;
+  
+  SocketService(this._storage);
+  
   bool get isConnected => _isConnected;
 
-  void connect({
+  Future<void> connect({
     required String sessionId,
     required String userId,
     required SessionUpdateCallback onSessionUpdate,
     required PointsUpdateCallback onPointsUpdate,
     required AchievementCallback onAchievementUnlocked,
-  }) {
+  }) async {
     disconnect();
+    
+    final token = await _storage.read(key: AppConstants.accessTokenKey) ?? '';
 
     _socket = io.io(
       AppConstants.socketUrl,
       io.OptionBuilder()
-          .setTransports(['websocket', 'polling'])
+          .setTransports(['websocket'])
           .setPath('/api/socket.io')
+          .setExtraHeaders({
+            'Authorization': 'Bearer $token',
+            'ngrok-skip-browser-warning': 'true',
+            'Bypass-Tunnel-Reminder': 'true',
+          })
           .disableAutoConnect()
           .enableReconnection()
           .setReconnectionAttempts(5)

@@ -43,4 +43,16 @@ class RecyclingRepositoryImpl implements RecyclingRepository {
       return Left(ServerFailure(e.toString()));
     }
   }
+
+  @override
+  Future<Either<Failure, RecyclingSessionSnapshot>> getSessionStatus(
+      String sessionId) async {
+    try {
+      return Right(await _remote.getSessionStatus(sessionId));
+    } on Failure catch (failure) {
+      return Left(failure);
+    } catch (error) {
+      return Left(ServerFailure(error.toString()));
+    }
+  }
 }

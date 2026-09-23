@@ -11,7 +11,8 @@ import '../services/socket_service.dart';
 import '../services/global_notification_service.dart';
 import 'storage_service.dart';
 
-import '../../features/auth/data/datasources/auth_remote_datasource.dart' as auth_ds;
+import '../../features/auth/data/datasources/auth_remote_datasource.dart'
+    as auth_ds;
 import '../../features/auth/data/repositories/auth_repository_impl.dart';
 import '../../features/auth/domain/repositories/auth_repository.dart';
 import '../../features/auth/domain/usecases/login_usecase.dart';
@@ -28,6 +29,7 @@ import '../../features/recycling/data/repositories/recycling_repository_impl.dar
 import '../../features/recycling/domain/repositories/recycling_repository.dart';
 import '../../features/recycling/domain/usecases/start_session_usecase.dart';
 import '../../features/recycling/presentation/bloc/recycling_bloc.dart';
+import '../services/location_service.dart';
 
 import '../../features/rewards/data/datasources/rewards_remote_datasource.dart';
 import '../../features/rewards/data/repositories/rewards_repository_impl.dart';
@@ -54,6 +56,11 @@ import '../../features/levels/domain/usecases/get_levels_usecase.dart';
 import '../../features/levels/presentation/bloc/levels_bloc.dart';
 
 import '../../features/notifications/presentation/bloc/app_notifications_bloc.dart';
+import '../../features/leaderboard/data/datasources/ranking_remote_datasource.dart';
+import '../../features/leaderboard/data/repositories/ranking_repository_impl.dart';
+import '../../features/leaderboard/domain/repositories/ranking_repository.dart';
+import '../../features/leaderboard/domain/usecases/get_ranking_usecase.dart';
+import '../../features/leaderboard/presentation/bloc/ranking_bloc.dart';
 
 final sl = GetIt.instance;
 
@@ -71,40 +78,40 @@ Future<void> initDependencies() async {
   }
 
   sl.registerLazySingleton<StorageService>(
-        () => StorageService(
+    () => StorageService(
       secure: kIsWeb ? null : secureStorage,
       prefs: sl<SharedPreferences>(),
     ),
   );
 
   sl.registerLazySingleton<ApiClient>(
-        () => ApiClient(
+    () => ApiClient(
       secureStorage: kIsWeb ? null : secureStorage,
       prefs: sl<SharedPreferences>(),
     ),
   );
 
   // Session-scoped socket (used during active recycling sessions)
-  sl.registerFactory<SocketService>(() => SocketService());
+  sl.registerFactory<SocketService>(() => SocketService(sl<StorageService>()));
 
   // App-wide persistent socket (achievements, coupon validation, points)
   sl.registerLazySingleton<GlobalNotificationService>(
-        () => GlobalNotificationService(),
+    () => GlobalNotificationService(sl<StorageService>()),
   );
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   sl.registerLazySingleton<auth_ds.AuthRemoteDataSource>(
-        () => auth_ds.AuthRemoteDataSourceImpl(sl()),
+    () => auth_ds.AuthRemoteDataSourceImpl(sl()),
   );
   sl.registerLazySingleton<AuthRepository>(
-        () => AuthRepositoryImpl(sl<auth_ds.AuthRemoteDataSource>(), sl()),
+    () => AuthRepositoryImpl(sl<auth_ds.AuthRemoteDataSource>(), sl()),
   );
   sl.registerLazySingleton(() => LoginUseCase(sl()));
   sl.registerLazySingleton(() => RegisterUseCase(sl()));
   sl.registerLazySingleton(() => GetProfileUseCase(sl()));
   sl.registerLazySingleton(() => LogoutUseCase(sl()));
   sl.registerLazySingleton(
-        () => AuthBloc(
+    () => AuthBloc(
       loginUseCase: sl(),
       registerUseCase: sl(),
       getProfileUseCase: sl(),
@@ -119,43 +126,47 @@ Future<void> initDependencies() async {
 
   // ── Home ──────────────────────────────────────────────────────────────────
   sl.registerLazySingleton<HomeRemoteDataSource>(
-        () => HomeRemoteDataSourceImpl(sl()),
+    () => HomeRemoteDataSourceImpl(sl()),
   );
   sl.registerLazySingleton<HomeRepository>(() => HomeRepositoryImpl(sl()));
   sl.registerLazySingleton(() => GetHomeDataUseCase(sl()));
   sl.registerLazySingleton(() => HomeBloc(sl()));
 
   // ── Recycling ─────────────────────────────────────────────────────────────
+  sl.registerLazySingleton<LocationService>(() => LocationService());
   sl.registerLazySingleton<RecyclingRemoteDataSource>(
-        () => RecyclingRemoteDataSourceImpl(sl()),
+    () => RecyclingRemoteDataSourceImpl(sl()),
   );
   sl.registerLazySingleton<RecyclingRepository>(
-        () => RecyclingRepositoryImpl(sl()),
+    () => RecyclingRepositoryImpl(sl()),
   );
   sl.registerLazySingleton(() => StartSessionUseCase(sl()));
   sl.registerLazySingleton(() => EndSessionUseCase(sl()));
+  sl.registerLazySingleton(() => GetSessionStatusUseCase(sl()));
   sl.registerLazySingleton(
-        () => RecyclingBloc(
-      startSession:  sl<StartSessionUseCase>(),
-      endSession:    sl<EndSessionUseCase>(),
-      homeBloc:      sl<HomeBloc>(),
+    () => RecyclingBloc(
+      startSession: sl<StartSessionUseCase>(),
+      endSession: sl<EndSessionUseCase>(),
+      getSessionStatus: sl<GetSessionStatusUseCase>(),
+      homeBloc: sl<HomeBloc>(),
       socketService: sl<SocketService>(),
-      storage:       sl<StorageService>(),
+      storage: sl<StorageService>(),
+      locationService: sl<LocationService>(),
     ),
   );
 
   // ── Rewards ───────────────────────────────────────────────────────────────
   sl.registerLazySingleton<RewardsRemoteDataSource>(
-        () => RewardsRemoteDataSourceImpl(sl()),
+    () => RewardsRemoteDataSourceImpl(sl()),
   );
   sl.registerLazySingleton<RewardsRepository>(
-        () => RewardsRepositoryImpl(sl()),
+    () => RewardsRepositoryImpl(sl()),
   );
   sl.registerLazySingleton(() => GetActiveRewardsUseCase(sl()));
   sl.registerLazySingleton(() => RedeemRewardUseCase(sl()));
   sl.registerLazySingleton(() => GetMyCouponsUseCase(sl()));
   sl.registerFactory(
-        () => RewardsBloc(
+    () => RewardsBloc(
       sl<GetActiveRewardsUseCase>(),
       sl<RedeemRewardUseCase>(),
       sl<GetMyCouponsUseCase>(),
@@ -164,15 +175,15 @@ Future<void> initDependencies() async {
 
   // ── Profile ───────────────────────────────────────────────────────────────
   sl.registerLazySingleton<ProfileRemoteDataSource>(
-        () => ProfileRemoteDataSourceImpl(sl()),
+    () => ProfileRemoteDataSourceImpl(sl()),
   );
   sl.registerLazySingleton<ProfileRepository>(
-        () => ProfileRepositoryImpl(sl()),
+    () => ProfileRepositoryImpl(sl()),
   );
   sl.registerLazySingleton(() => GetTransactionHistoryUseCase(sl()));
   sl.registerLazySingleton(() => GetAchievementsUseCase(sl()));
   sl.registerFactory(
-        () => ProfileBloc(
+    () => ProfileBloc(
       sl<GetTransactionHistoryUseCase>(),
       sl<GetAchievementsUseCase>(),
       sl<AuthBloc>(),
@@ -181,7 +192,7 @@ Future<void> initDependencies() async {
 
   // ── Map ───────────────────────────────────────────────────────────────────
   sl.registerLazySingleton<MapRemoteDataSource>(
-        () => MapRemoteDataSourceImpl(sl()),
+    () => MapRemoteDataSourceImpl(sl()),
   );
   sl.registerLazySingleton<MapRepository>(() => MapRepositoryImpl(sl()));
   sl.registerLazySingleton(() => GetAllBinsUseCase(sl()));
@@ -189,17 +200,27 @@ Future<void> initDependencies() async {
 
   // ── Levels ────────────────────────────────────────────────────────────────
   sl.registerLazySingleton<LevelsRemoteDataSource>(
-        () => LevelsRemoteDataSourceImpl(sl()),
+    () => LevelsRemoteDataSourceImpl(sl()),
   );
   sl.registerLazySingleton<LevelsRepository>(
-        () => LevelsRepositoryImpl(sl()),
+    () => LevelsRepositoryImpl(sl()),
   );
   sl.registerLazySingleton(() => GetLevelsUseCase(sl()));
   sl.registerFactory(() => LevelsBloc(sl()));
 
+  // ── Ranking ───────────────────────────────────────────────────────────────
+  sl.registerLazySingleton<RankingRemoteDataSource>(
+    () => RankingRemoteDataSourceImpl(sl()),
+  );
+  sl.registerLazySingleton<RankingRepository>(
+    () => RankingRepositoryImpl(sl()),
+  );
+  sl.registerLazySingleton(() => GetRankingUseCase(sl()));
+  sl.registerFactory(() => RankingBloc(sl()));
+
   // ── App-wide notifications (achievements + coupon validation) ─────────────
   sl.registerLazySingleton(
-        () => AppNotificationsBloc(
+    () => AppNotificationsBloc(
       service: sl<GlobalNotificationService>(),
       storage: sl<StorageService>(),
       homeBloc: sl<HomeBloc>(),

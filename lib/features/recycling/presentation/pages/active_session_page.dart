@@ -35,7 +35,7 @@ class ActiveSessionPage extends StatelessWidget {
         }
 
         // ── Show SnackBar on every bottle rejection ───────────────────────
-        if (state is RecyclingSessionActive && state.bottleRejected) {
+        if (state is RecyclingSessionActive && (state.bottleRejected || state.bottleError)) {
           ScaffoldMessenger.of(context)
             ..hideCurrentSnackBar()
             ..showSnackBar(
@@ -78,6 +78,18 @@ class ActiveSessionPage extends StatelessWidget {
       },
       child: PopScope(
         canPop: false,
+        onPopInvokedWithResult: (didPop, result) {
+          if (didPop) return;
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              const SnackBar(
+                content: Text('El tacho está abierto. Finaliza la sesión primero.'),
+                behavior: SnackBarBehavior.floating,
+                duration: Duration(seconds: 2),
+              ),
+            );
+        },
         child: Scaffold(
           backgroundColor: AppColors.backgroundLight,
           body: BlocBuilder<RecyclingBloc, RecyclingState>(
@@ -91,6 +103,10 @@ class ActiveSessionPage extends StatelessWidget {
               final rejected = state is RecyclingSessionActive
                   ? state.bottleRejected
                   : false;
+              final error = state is RecyclingSessionActive
+                  ? state.bottleError
+                  : false;
+              final hasAlert = rejected || error;
 
               return SafeArea(
                 child: Padding(
@@ -108,7 +124,7 @@ class ActiveSessionPage extends StatelessWidget {
                             width: 12,
                             height: 12,
                             decoration: BoxDecoration(
-                              color: rejected
+                              color: hasAlert
                                   ? AppColors.error
                                   : AppColors.primary,
                               shape: BoxShape.circle,
@@ -120,8 +136,8 @@ class ActiveSessionPage extends StatelessWidget {
                             child: Text(
                               rejected
                                   ? 'OBJETO NO RECONOCIDO'
-                                  : 'BIN CONNECTED',
-                              key: ValueKey(rejected),
+                                  : 'PUNTO CONECTADO',
+                              key: ValueKey('_'),
                               style: Theme.of(context)
                                   .textTheme
                                   .bodySmall
@@ -162,12 +178,12 @@ class ActiveSessionPage extends StatelessWidget {
                             rejected
                                 ? 'Solo botellas de plástico PET'
                                 : 'Listo para recibir tus botellas',
-                            key: ValueKey(rejected),
+                            key: ValueKey('_'),
                             style: Theme.of(context)
                                 .textTheme
                                 .bodyMedium
                                 ?.copyWith(
-                              color: rejected
+                              color: hasAlert
                                   ? AppColors.error
                                   : AppColors.textSecondary,
                             ),

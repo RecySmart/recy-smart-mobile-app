@@ -38,6 +38,8 @@ class ApiClient {
           'Accept': 'application/json',
           // Bypass ngrok browser warning page in web
           'ngrok-skip-browser-warning': 'true',
+          // Bypass localtunnel reminder page
+          'Bypass-Tunnel-Reminder': 'true',
         },
       ),
     );
@@ -94,7 +96,7 @@ class ApiClient {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.receiveTimeout:
       case DioExceptionType.sendTimeout:
-        return const NetworkFailure('Connection timed out. Please try again.');
+        return const NetworkFailure('Se agotó el tiempo de espera. Inténtalo de nuevo.');
       case DioExceptionType.connectionError:
         return const NetworkFailure();
       case DioExceptionType.badResponse:
@@ -107,14 +109,18 @@ class ApiClient {
         }
         return ServerFailure(message);
       default:
-        return const ServerFailure('Unexpected error. Please try again.');
+        return const ServerFailure('Ocurrió un error inesperado. Inténtalo de nuevo.');
     }
   }
 
   static String _extractMessage(dynamic data) {
     if (data is Map) {
-      return data['message']?.toString() ?? 'An error occurred';
+      final message = data['message']?.toString();
+      if (message != null && message.startsWith('Cannot GET /api/')) {
+        return 'Este servicio aún no está disponible en el servidor.';
+      }
+      return message ?? 'Ocurrió un error';
     }
-    return 'An error occurred';
+    return 'Ocurrió un error';
   }
 }

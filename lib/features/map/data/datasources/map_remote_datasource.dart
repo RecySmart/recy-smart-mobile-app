@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import '../../../../core/errors/failures.dart';
 import '../../../../core/network/api_client.dart';
 import '../models/smart_bin_model.dart';
 
@@ -14,7 +13,7 @@ class MapRemoteDataSourceImpl implements MapRemoteDataSource {
   @override
   Future<List<SmartBinModel>> getAllBins() async {
     try {
-      final response = await _apiClient.get('/admin/bins');
+      final response = await _apiClient.get('/bins');
       final data = response.data as List<dynamic>? ?? [];
       return data
           .map((e) => SmartBinModel.fromJson(e as Map<String, dynamic>))

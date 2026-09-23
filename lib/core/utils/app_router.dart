@@ -93,7 +93,7 @@ class AppRouter {
           return SessionSummaryPage(
             bottlesDropped: extra['bottlesDropped'] as int,
             pointsEarned: extra['pointsEarned'] as int,
-            co2Saved: extra['co2Saved'] as double,
+            sessionId: extra['sessionId'] as String,
             autoClosed: extra['autoClosed'] as bool? ?? false,
           );
         },

@@ -6,7 +6,6 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/injection_container.dart';
 import '../../data/datasources/profile_remote_datasource.dart';
 import '../bloc/profile_bloc.dart';
-import '../../../auth/presentation/bloc/auth_bloc.dart';
 
 class TransactionHistoryPage extends StatelessWidget {
   const TransactionHistoryPage({super.key});
@@ -29,14 +28,14 @@ class _TransactionHistoryView extends StatefulWidget {
 }
 
 class _TransactionHistoryViewState extends State<_TransactionHistoryView> {
-  String _filter = 'All';
+  String _filter = 'Todos';
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
-        title: const Text('Transaction History'),
+        title: const Text('Historial de movimientos'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
@@ -76,10 +75,10 @@ class _TransactionContent extends StatelessWidget {
   });
 
   List<TransactionModel> get _filtered {
-    if (filter == 'Deposits') {
+    if (filter == 'Depósitos') {
       return transactions.where((t) => t.amount > 0).toList();
     }
-    if (filter == 'Rewards') {
+    if (filter == 'Canjes') {
       return transactions.where((t) => t.amount < 0).toList();
     }
     return transactions;
@@ -106,9 +105,13 @@ class _TransactionContent extends StatelessWidget {
     for (final tx in _filtered) {
       final diff = now.difference(tx.createdAt);
       String key;
-      if (diff.inDays == 0) key = 'TODAY';
-      else if (diff.inDays == 1) key = 'YESTERDAY';
-      else key = DateFormat('MMMM d').format(tx.createdAt).toUpperCase();
+      if (diff.inDays == 0) {
+        key = 'HOY';
+      } else if (diff.inDays == 1) {
+        key = 'AYER';
+      } else {
+        key = DateFormat('dd/MM/yyyy').format(tx.createdAt);
+      }
       grouped.putIfAbsent(key, () => []).add(tx);
     }
 
@@ -129,7 +132,7 @@ class _TransactionContent extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'THIS MONTH (${DateFormat('MMMM').format(now).toUpperCase()})',
+                      'ESTE MES (${DateFormat('MM/yyyy').format(now)})',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Colors.white54,
                         letterSpacing: 1,
@@ -137,7 +140,7 @@ class _TransactionContent extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Earned',
+                      'Ganados',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Colors.white54,
                       ),
@@ -161,7 +164,7 @@ class _TransactionContent extends StatelessWidget {
                     children: [
                       const SizedBox(height: 20),
                       Text(
-                        'Redeemed',
+                        'Canjeados',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Colors.white54,
                         ),
@@ -186,7 +189,7 @@ class _TransactionContent extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
-            children: ['All', 'Deposits', 'Rewards'].map((f) {
+            children: ['Todos', 'Depósitos', 'Canjes'].map((f) {
               final isSelected = f == filter;
               return Padding(
                 padding: const EdgeInsets.only(right: 8),
@@ -214,7 +217,7 @@ class _TransactionContent extends StatelessWidget {
         // List
         Expanded(
           child: grouped.isEmpty
-              ? const Center(child: Text('No transactions found.'))
+              ? const Center(child: Text('No se encontraron movimientos.'))
               : ListView(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             children: grouped.entries.map((entry) {
@@ -280,7 +283,7 @@ class _TransactionTile extends StatelessWidget {
         ),
       ),
       title: Text(
-        isDeposit ? 'Smart Bin Deposit' : 'Reward Redeemed',
+        isDeposit ? 'Depósito de botella PET' : 'Recompensa canjeada',
         style: Theme.of(context).textTheme.titleMedium,
       ),
       subtitle: Text(
@@ -300,7 +303,7 @@ class _TransactionTile extends StatelessWidget {
           ),
           if (!isDeposit)
             Text(
-              DateFormat('h:mm a').format(tx.createdAt),
+              DateFormat('HH:mm').format(tx.createdAt),
               style: Theme.of(context).textTheme.bodySmall,
             ),
         ],

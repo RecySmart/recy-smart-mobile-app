@@ -2,20 +2,64 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/app_router.dart';
+import '../../../../core/utils/injection_container.dart';
+import '../../../auth/domain/usecases/get_profile_usecase.dart';
+import '../../../profile/domain/usecases/get_transaction_history_usecase.dart';
 
-class SessionSummaryPage extends StatelessWidget {
+class SessionSummaryPage extends StatefulWidget {
+  final String sessionId;
   final int bottlesDropped;
   final int pointsEarned;
-  final double co2Saved;
   final bool autoClosed;
 
   const SessionSummaryPage({
     super.key,
+    required this.sessionId,
     required this.bottlesDropped,
     required this.pointsEarned,
-    required this.co2Saved,
     this.autoClosed = false,
   });
+
+  @override
+  State<SessionSummaryPage> createState() => _SessionSummaryPageState();
+}
+
+class _SessionSummaryPageState extends State<SessionSummaryPage> {
+  bool _checking = false;
+  bool _creditConfirmed = false;
+  int? _balance;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _refresh();
+  }
+
+  Future<void> _refresh() async {
+    if (_checking) return;
+    setState(() {
+      _checking = true;
+      _error = null;
+      _balance = null;
+    });
+    final history = await sl<GetTransactionHistoryUseCase>()();
+    final profile = await sl<GetProfileUseCase>()();
+    if (!mounted) return;
+    setState(() {
+      history.fold(
+        (failure) => _error = 'No se pudo consultar el historial: ${failure.message}',
+        (transactions) => _creditConfirmed = transactions.any((transaction) =>
+            transaction.source == 'RECYCLING_DROP' &&
+            transaction.reference == widget.sessionId),
+      );
+      profile.fold(
+        (failure) => _error ??= 'No se pudo consultar el saldo: ${failure.message}',
+        (user) => _balance = user.wallet?.currentBalance,
+      );
+      _checking = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,16 +68,16 @@ class SessionSummaryPage extends StatelessWidget {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
+          child: ListView(
             children: [
-              const Spacer(),
+              const SizedBox(height: 24),
 
               // Icon
               Container(
                 width: 100,
                 height: 100,
                 decoration: BoxDecoration(
-                  color: autoClosed
+                  color: widget.autoClosed
                       ? const Color(0xFFFFF3E0)
                       : AppColors.primaryLight,
                   shape: BoxShape.circle,
@@ -41,11 +85,11 @@ class SessionSummaryPage extends StatelessWidget {
                 child: Container(
                   margin: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: autoClosed ? AppColors.warning : AppColors.primary,
+                    color: widget.autoClosed ? AppColors.warning : AppColors.primary,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    autoClosed ? Icons.lock_rounded : Icons.check_rounded,
+                    widget.autoClosed ? Icons.lock_rounded : Icons.check_rounded,
                     color: Colors.white,
                     size: 40,
                   ),
@@ -54,14 +98,14 @@ class SessionSummaryPage extends StatelessWidget {
               const SizedBox(height: 24),
 
               Text(
-                autoClosed ? 'Session Closed' : 'Awesome Job!',
+                'Sesión cerrada',
                 style: Theme.of(context).textTheme.displaySmall,
               ),
               const SizedBox(height: 8),
               Text(
-                autoClosed
-                    ? 'Your session was automatically closed due to inactivity. Your points were safely saved.'
-                    : 'You\'ve successfully completed your session and helped the planet.',
+                widget.autoClosed
+                    ? 'El cierre remoto fue confirmado tras agotarse el tiempo local.'
+                    : 'El cierre de la sesión fue confirmado. El crédito de EcoPuntos se comprueba por separado.',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
@@ -79,7 +123,7 @@ class SessionSummaryPage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'YOUR IMPACT TODAY',
+                      'RESUMEN DE ESTA SESIÓN',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: AppColors.textMuted,
                         letterSpacing: 1.2,
@@ -90,15 +134,15 @@ class SessionSummaryPage extends StatelessWidget {
                       children: [
                         Expanded(
                           child: _ImpactTile(
-                            value: '$bottlesDropped',
-                            label: 'Bottles Recycled',
+                            value: '${widget.bottlesDropped}',
+                            label: 'Botellas aceptadas',
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: _ImpactTile(
-                            value: '${co2Saved.toStringAsFixed(2)} kg',
-                            label: 'CO2 Saved',
+                            value: '+${widget.pointsEarned}',
+                            label: 'EcoPuntos calculados',
                           ),
                         ),
                       ],
@@ -111,40 +155,18 @@ class SessionSummaryPage extends StatelessWidget {
                         color: AppColors.primaryLight,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 28,
-                            height: 28,
-                            decoration: const BoxDecoration(
-                              color: AppColors.primary,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            'Points Earned',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const Spacer(),
-                          Text(
-                            '+$pointsEarned',
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineSmall
-                                ?.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
+                      child: Text(
+                        _creditConfirmed
+                            ? 'Crédito confirmado en el historial'
+                            : 'Crédito pendiente de confirmar',
+                        style: Theme.of(context).textTheme.titleMedium,
                       ),
                     ),
                   ],
                 ),
               ),
 
-              if (autoClosed) ...[
+              if (!_creditConfirmed) ...[
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -153,7 +175,7 @@ class SessionSummaryPage extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    "Don't worry! All the points you earned before walking away have been safely added to your wallet.",
+                    'El cierre no confirma por sí solo el abono. Consulta nuevamente el historial y el saldo.',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: AppColors.primaryDark,
@@ -163,34 +185,43 @@ class SessionSummaryPage extends StatelessWidget {
                 ),
               ],
 
-              const Spacer(),
+              const SizedBox(height: 24),
 
               Text(
-                'New Total Balance: $pointsEarned Pts',
+                _balance == null
+                    ? 'Saldo actual: no disponible'
+                    : 'Saldo actual de la billetera: $_balance EcoPuntos',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w500,
                 ),
               ),
               const SizedBox(height: 16),
 
+              if (_error != null)
+                Text(_error!,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: AppColors.error)),
+              TextButton.icon(
+                onPressed: _checking ? null : _refresh,
+                icon: _checking
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh),
+                label: const Text('Actualizar crédito y saldo'),
+              ),
+
               SizedBox(
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
                   onPressed: () => context.go(AppRoutes.home),
-                  child: const Text('Back to Home'),
+                  child: const Text('Volver al Inicio'),
                 ),
               ),
               const SizedBox(height: 12),
-              TextButton(
-                onPressed: () {},
-                child: Text(
-                  'View Receipt',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textMuted,
-                  ),
-                ),
-              ),
               const SizedBox(height: 16),
             ],
           ),

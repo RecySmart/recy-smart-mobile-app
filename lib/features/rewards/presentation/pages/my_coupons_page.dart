@@ -327,30 +327,34 @@ class _CouponCard extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
               child: Row(
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'CÓDIGO',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textMuted,
-                          letterSpacing: 1,
-                          fontSize: 9,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'CÓDIGO',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textMuted,
+                            letterSpacing: 1,
+                            fontSize: 9,
+                          ),
                         ),
-                      ),
-                      Text(
-                        coupon.qrCode,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontFamily: 'monospace',
-                          letterSpacing: 1.5,
-                          color: coupon.isUnused
-                              ? AppColors.textPrimary
-                              : AppColors.textMuted,
+                        Text(
+                          coupon.qrCode,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontFamily: 'monospace',
+                            letterSpacing: 1.5,
+                            color: coupon.isUnused
+                                ? AppColors.textPrimary
+                                : AppColors.textMuted,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                  const Spacer(),
+                  const SizedBox(width: 16),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [

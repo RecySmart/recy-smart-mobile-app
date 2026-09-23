@@ -10,27 +10,29 @@ import '../../domain/entities/reward.dart';
 
 class CouponDetailPage extends StatelessWidget {
   final String couponId;
-  const CouponDetailPage({super.key, required this.couponId});
+  final UserCoupon? recentCoupon;
+  const CouponDetailPage({super.key, required this.couponId, this.recentCoupon});
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => sl<RewardsBloc>()..add(RewardsLoadCouponsEvent()),
-      child: _CouponDetailView(couponId: couponId),
+      child: _CouponDetailView(couponId: couponId, recentCoupon: recentCoupon),
     );
   }
 }
 
 class _CouponDetailView extends StatelessWidget {
   final String couponId;
-  const _CouponDetailView({required this.couponId});
+  final UserCoupon? recentCoupon;
+  const _CouponDetailView({required this.couponId, this.recentCoupon});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
       appBar: AppBar(
-        title: const Text('Digital Coupon'),
+        title: const Text('Cupón Digital'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
@@ -38,25 +40,81 @@ class _CouponDetailView extends StatelessWidget {
       ),
       body: BlocBuilder<RewardsBloc, RewardsState>(
         builder: (context, state) {
-          UserCoupon? coupon;
+          if (state is RewardsError && recentCoupon == null) {
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('No se pudo consultar el cupón.'),
+                  const SizedBox(height: 8),
+                  Text(state.message, textAlign: TextAlign.center),
+                  TextButton(
+                    onPressed: () => context.read<RewardsBloc>()
+                        .add(RewardsLoadCouponsEvent()),
+                    child: const Text('Reintentar'),
+                  ),
+                ],
+              ),
+            );
+          }
+          if ((state is RewardsLoading || state is RewardsInitial) &&
+              recentCoupon == null) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          UserCoupon? coupon = recentCoupon;
           if (state is RewardsCouponsLoaded) {
             try {
               coupon = state.coupons.firstWhere((c) => c.id == couponId);
-            } catch (_) {}
-          }
-          // Also accept coupon from redeem success state passed via extra
-          if (state is RewardsRedeemSuccess && state.coupon.id == couponId) {
-            coupon = state.coupon;
+            } catch (_) {
+              if (recentCoupon == null) {
+                return Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text('El cupón no existe en tu lista.'),
+                      TextButton(
+                        onPressed: () => context.pop(),
+                        child: const Text('Volver'),
+                      ),
+                    ],
+                  ),
+                );
+              }
+            }
           }
 
           if (coupon == null) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: Text('El cupón no está disponible.'));
           }
+
+          final isExpired = coupon.isExpired ||
+              (!coupon.isRedeemed && coupon.expiresAt.isBefore(DateTime.now()));
+          final statusLabel = coupon.isRedeemed
+              ? 'Usado'
+              : isExpired
+                  ? 'Vencido'
+                  : recentCoupon?.id == coupon.id
+                      ? 'Canje realizado · Disponible'
+                      : 'Disponible';
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: Column(
               children: [
+                if (state is RewardsError && recentCoupon != null)
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(children: [
+                        const Text('Canje realizado. No se pudo actualizar la lista de cupones.'),
+                        TextButton(
+                          onPressed: () => context.read<RewardsBloc>()
+                              .add(RewardsLoadCouponsEvent()),
+                          child: const Text('Reintentar consulta'),
+                        ),
+                      ]),
+                    ),
+                  ),
                 // Coupon card
                 Container(
                   width: double.infinity,
@@ -66,7 +124,7 @@ class _CouponDetailView extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.06),
+                        color: Colors.black.withValues(alpha: 0.06),
                         blurRadius: 16,
                         offset: const Offset(0, 4),
                       ),
@@ -79,15 +137,15 @@ class _CouponDetailView extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 6),
                         decoration: BoxDecoration(
-                          color: coupon.isUnused
+                          color: !coupon.isRedeemed && !isExpired
                               ? AppColors.primaryLight
                               : AppColors.surfaceGrey,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          coupon.isUnused ? 'Success Redemption' : coupon.status,
+                          statusLabel,
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: coupon.isUnused
+                            color: !coupon.isRedeemed && !isExpired
                                 ? AppColors.primary
                                 : AppColors.textMuted,
                             fontWeight: FontWeight.w600,
@@ -131,7 +189,7 @@ class _CouponDetailView extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            'Valid at:  ',
+                            'Válido en:  ',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                           Text(
@@ -156,7 +214,7 @@ class _CouponDetailView extends StatelessWidget {
                               const Icon(Icons.info_outline_rounded,
                                   color: AppColors.warning, size: 16),
                               const SizedBox(width: 8),
-                              Text('This coupon has been used.',
+                              Text('Este cupón ha sido utilizado.',
                                   style: Theme.of(context)
                                       .textTheme
                                       .bodySmall
@@ -174,9 +232,11 @@ class _CouponDetailView extends StatelessWidget {
                   height: 52,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.secondary),
+                        backgroundColor: AppColors.secondary,
+                        foregroundColor: Colors.white,
+                    ),
                     onPressed: () => context.go(AppRoutes.rewards),
-                    child: const Text('Back to Rewards'),
+                    child: const Text('Volver a Premios'),
                   ),
                 ),
               ],

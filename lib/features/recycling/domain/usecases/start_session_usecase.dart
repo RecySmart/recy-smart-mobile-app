@@ -30,3 +30,11 @@ class EndSessionUseCase {
   Future<Either<Failure, void>> call(String sessionId) =>
       repository.endSession(sessionId);
 }
+
+class GetSessionStatusUseCase {
+  final RecyclingRepository repository;
+  GetSessionStatusUseCase(this.repository);
+
+  Future<Either<Failure, RecyclingSessionSnapshot>> call(String sessionId) =>
+      repository.getSessionStatus(sessionId);
+}

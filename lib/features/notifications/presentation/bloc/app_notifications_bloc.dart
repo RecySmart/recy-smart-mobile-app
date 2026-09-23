@@ -23,7 +23,7 @@ class AchievementNotification extends Equatable {
   factory AchievementNotification.fromJson(Map<String, dynamic> json) {
     return AchievementNotification(
       id: json['id'] as String? ?? json['achievementId'] as String? ?? '',
-      name: json['name'] as String? ?? 'Logro desbloqueado',
+      name: json['badgeName'] as String? ?? json['name'] as String? ?? 'Logro desbloqueado',
       description: json['description'] as String? ??
           '¡Has desbloqueado un nuevo logro!',
       iconEmoji: json['icon'] as String?,
@@ -180,6 +180,7 @@ class AppNotificationsBloc
       AppNotificationsDisconnectEvent event,
       Emitter<AppNotificationsState> emit) {
     _service.disconnect();
+    emit(const AppNotificationsState(queue: []));
   }
 
   @override

@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -36,6 +35,8 @@ class _MapView extends StatefulWidget {
 class _MapViewState extends State<_MapView> {
   final MapController _mapController = MapController();
   final TextEditingController _searchController = TextEditingController();
+  bool _isListView = false;
+  bool _locationDenied = false;
 
   @override
   void initState() {
@@ -45,9 +46,10 @@ class _MapViewState extends State<_MapView> {
 
   Future<void> _requestLocationPermission() async {
     final status = await Permission.location.request();
-    if (status.isGranted) {
-      // In a real app, use geolocator to get actual position
-      // For now we center on Lima
+    if (status.isDenied || status.isPermanentlyDenied) {
+      if (mounted) setState(() => _locationDenied = true);
+    } else {
+      if (mounted) setState(() => _locationDenied = false);
     }
   }
 
@@ -64,10 +66,13 @@ class _MapViewState extends State<_MapView> {
         return Scaffold(
           body: Stack(
             children: [
-              // ── Map ──────────────────────────────────────────────────────
-              _buildMap(context, state),
+              // ── Map or List ──────────────────────────────────────────────
+              if (_isListView)
+                _buildListView(context, state)
+              else
+                _buildMap(context, state),
 
-              // ── Search bar ───────────────────────────────────────────────
+              // ── Search bar & Filters ───────────────────────────────────────────────
               SafeArea(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -78,19 +83,38 @@ class _MapViewState extends State<_MapView> {
                     ),
                     const SizedBox(height: 10),
                     _FilterChips(
-                      selected: state is MapLoaded
-                          ? state.selectedFilter
-                          : 'Todos',
-                      onSelected: (f) => context
-                          .read<MapBloc>()
-                          .add(MapFilterChangedEvent(f)),
+                      selected: state is MapLoaded ? state.selectedFilter : 'Todos',
+                      onSelected: (f) => context.read<MapBloc>().add(MapFilterChangedEvent(f)),
                     ),
+                    if (_locationDenied)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: AppColors.error.withValues(alpha: 0.9),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.location_off, color: Colors.white, size: 16),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Permiso de ubicación denegado. Mostrando vista predeterminada.',
+                                  style: TextStyle(color: Colors.white, fontSize: 12),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
 
               // ── Bottom sheet bin info ─────────────────────────────────────
-              if (state is MapLoaded && state.selectedBin != null)
+              if (!_isListView && state is MapLoaded && state.selectedBin != null)
                 Positioned(
                   bottom: 0,
                   left: 0,
@@ -98,9 +122,7 @@ class _MapViewState extends State<_MapView> {
                   child: _BinInfoSheet(
                     bin: state.selectedBin!,
                     userLocation: state.userLocation,
-                    onDismiss: () => context
-                        .read<MapBloc>()
-                        .add(MapBinDismissedEvent()),
+                    onDismiss: () => context.read<MapBloc>().add(MapBinDismissedEvent()),
                   ),
                 ),
 
@@ -108,6 +130,13 @@ class _MapViewState extends State<_MapView> {
               if (state is MapLoading)
                 const Center(child: CircularProgressIndicator()),
             ],
+          ),
+          floatingActionButton: FloatingActionButton(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            onPressed: () => setState(() => _isListView = !_isListView),
+            tooltip: _isListView ? 'Ver en Mapa' : 'Ver como Lista',
+            child: Icon(_isListView ? Icons.map_rounded : Icons.format_list_bulleted_rounded),
           ),
         );
       },
@@ -162,9 +191,48 @@ class _MapViewState extends State<_MapView> {
     );
   }
 
+  Widget _buildListView(BuildContext context, MapState state) {
+    if (state is! MapLoaded) return const SizedBox.shrink();
+    if (state.filteredBins.isEmpty) {
+      return const Center(child: Text('No se encontraron contenedores.'));
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.only(top: 150, bottom: 80, left: 16, right: 16),
+      itemCount: state.filteredBins.length,
+      itemBuilder: (context, index) {
+        final bin = state.filteredBins[index];
+        return Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            leading: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: AppColors.primaryLight,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.delete_rounded, color: AppColors.primary, size: 24),
+            ),
+            title: Text(bin.locationName, style: Theme.of(context).textTheme.titleMedium),
+            subtitle: Text('Capacidad: %'),
+            trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
+            onTap: () {
+              setState(() => _isListView = false);
+              context.read<MapBloc>().add(MapBinSelectedEvent(bin));
+              _mapController.move(LatLng(bin.latitude, bin.longitude), 15);
+            },
+          ),
+        );
+      },
+    );
+  }
+
   void _filterBySearch(BuildContext context, String query) {
     if (state is! MapLoaded) return;
-    // Search is handled visually — for now just filter by name
+    context.read<MapBloc>().add(MapSearchQueryChangedEvent(query));
   }
 
   MapState get state => context.read<MapBloc>().state;
@@ -188,7 +256,7 @@ class _SearchBar extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -236,32 +304,23 @@ class _FilterChips extends StatelessWidget {
         itemBuilder: (_, i) {
           final filter = _filters[i];
           final isSelected = filter == selected;
-          return GestureDetector(
-            onTap: () => onSelected(filter),
-            child: Container(
-              padding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: isSelected ? AppColors.secondary : Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Text(
-                filter,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: isSelected ? Colors.white : AppColors.textPrimary,
-                  fontWeight: isSelected
-                      ? FontWeight.w600
-                      : FontWeight.w400,
-                ),
-              ),
+          return FilterChip(
+            label: Text(filter),
+            selected: isSelected,
+            onSelected: (_) => onSelected(filter),
+            backgroundColor: Colors.white,
+            selectedColor: AppColors.secondary,
+            labelStyle: TextStyle(
+              color: isSelected ? Colors.white : AppColors.textPrimary,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
             ),
+            side: BorderSide.none,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            elevation: isSelected ? 0 : 2,
+            shadowColor: Colors.black.withValues(alpha: 0.3),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           );
         },
       ),
@@ -296,7 +355,7 @@ class _BinMarker extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: _color.withOpacity(0.3),
+            color: _color.withValues(alpha: 0.3),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -342,12 +401,22 @@ class _BinInfoSheet extends StatelessWidget {
     return AppColors.primary;
   }
 
-  Future<void> _openMaps() async {
+  Future<void> _openMaps(BuildContext context) async {
     final url = Uri.parse(
       'https://www.google.com/maps/dir/?api=1&destination=${bin.latitude},${bin.longitude}',
     );
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        throw Exception('No can launch');
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se pudo abrir una aplicación de mapas. Verifica si tienes alguna instalada.')),
+        );
+      }
     }
   }
 
@@ -362,7 +431,7 @@ class _BinInfoSheet extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.12),
+            color: Colors.black.withValues(alpha: 0.12),
             blurRadius: 20,
             offset: const Offset(0, -4),
           ),
@@ -473,6 +542,7 @@ class _BinInfoSheet extends StatelessWidget {
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.secondary,
+                      foregroundColor: Colors.white,
                       minimumSize: Size.zero,
                       padding: const EdgeInsets.symmetric(
                           horizontal: 20, vertical: 12),
@@ -481,7 +551,7 @@ class _BinInfoSheet extends StatelessWidget {
                     ),
                     icon: const Icon(Icons.directions_rounded, size: 18),
                     label: const Text('Cómo llegar'),
-                    onPressed: _openMaps,
+                    onPressed: () => _openMaps(context),
                   ),
                 ),
                 const SizedBox(width: 12),

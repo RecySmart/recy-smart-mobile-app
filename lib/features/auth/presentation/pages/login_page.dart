@@ -64,7 +64,7 @@ class _LoginPageState extends State<LoginPage> {
             body: SafeArea(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Form(
+                child: AutofillGroup(child: Form(
                   key: _formKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -81,32 +81,32 @@ class _LoginPageState extends State<LoginPage> {
                             size: 44, color: AppColors.primary),
                       ),
                       const SizedBox(height: 24),
-                      Text('Welcome',
+                      Text('Bienvenido',
                           style: Theme.of(context).textTheme.displaySmall),
                       const SizedBox(height: 8),
                       Text(
-                        'Sign in to recycle and earn points.',
+                        'Inicia sesión para reciclar y ganar EcoPuntos.',
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                       const SizedBox(height: 40),
                       AppTextField(
                         controller: _emailController,
-                        label: 'Email',
-                        hint: 'your@email.com',
-                        keyboardType: TextInputType.emailAddress,
+                        label: 'Correo electrónico',
+                        hint: 'tu@correo.com',
+                        keyboardType: TextInputType.emailAddress, autofillHints: const [AutofillHints.email], textInputAction: TextInputAction.next,
                         prefixIcon: Icons.email_outlined,
                         validator: (v) {
-                          if (v == null || v.isEmpty) return 'Email is required';
-                          if (!v.contains('@')) return 'Enter a valid email';
+                          if (v == null || v.isEmpty) return 'Ingresa tu correo electrónico';
+                          if (!v.contains('@')) return 'Ingresa un correo válido';
                           return null;
                         },
                       ),
                       const SizedBox(height: 16),
                       AppTextField(
                         controller: _passwordController,
-                        label: 'Password',
+                        label: 'Contraseña',
                         hint: '••••••••••',
-                        obscureText: _obscurePassword,
+                        obscureText: _obscurePassword, autofillHints: const [AutofillHints.password], textInputAction: TextInputAction.done, onFieldSubmitted: (_) => _submit(),
                         prefixIcon: Icons.lock_outline_rounded,
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -120,26 +120,10 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         validator: (v) {
                           if (v == null || v.isEmpty) {
-                            return 'Password is required';
+                            return 'Ingresa tu contraseña';
                           }
                           return null;
                         },
-                      ),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: () {},
-                          child: Text(
-                            'Forgot your password?',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
                       ),
                       const SizedBox(height: 8),
                       SizedBox(
@@ -156,19 +140,19 @@ class _LoginPageState extends State<LoginPage> {
                               color: Colors.white,
                             ),
                           )
-                              : const Text('Sign In'),
+                              : const Text('Iniciar sesión'),
                         ),
                       ),
                       const SizedBox(height: 32),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text("Don't have an account? ",
+                          Text('¿No tienes una cuenta? ',
                               style: Theme.of(context).textTheme.bodyMedium),
                           GestureDetector(
                             onTap: () => context.go(AppRoutes.register),
                             child: Text(
-                              'Sign Up Here',
+                              'Regístrate aquí',
                               style: Theme.of(context)
                                   .textTheme
                                   .bodyMedium
@@ -182,6 +166,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       const SizedBox(height: 32),
                     ],
+                  ),
                   ),
                 ),
               ),

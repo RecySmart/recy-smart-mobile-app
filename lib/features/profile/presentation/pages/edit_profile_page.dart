@@ -18,7 +18,6 @@ class EditProfilePage extends StatefulWidget {
 class _EditProfilePageState extends State<EditProfilePage> {
   late final TextEditingController _nameController;
   late final TextEditingController _emailController;
-  late final TextEditingController _locationController;
 
   @override
   void initState() {
@@ -27,14 +26,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
     final user = authState is AuthAuthenticated ? authState.user : null;
     _nameController = TextEditingController(text: user?.name ?? '');
     _emailController = TextEditingController(text: user?.email ?? '');
-    _locationController = TextEditingController(text: 'Lima, Peru');
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
-    _locationController.dispose();
     super.dispose();
   }
 
@@ -49,7 +46,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     return Scaffold(
       backgroundColor: AppColors.surfaceWhite,
       appBar: AppBar(
-        title: const Text('Edit Profile'),
+        title: const Text('Editar Perfil'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.pop(),
@@ -59,6 +56,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
+
             CircleAvatar(
               radius: 40,
               backgroundColor: AppColors.primary,
@@ -73,38 +71,17 @@ class _EditProfilePageState extends State<EditProfilePage> {
             const SizedBox(height: 32),
             AppTextField(
               controller: _nameController,
-              label: 'DISPLAY NAME',
-              hint: 'John Doe',
+              label: 'NOMBRE A MOSTRAR',
+              hint: 'Juan Pérez',
+              enabled: false,
             ),
             const SizedBox(height: 16),
             AppTextField(
               controller: _emailController,
-              label: 'EMAIL',
-              hint: 'your@email.com',
+              label: 'CORREO ELECTRÓNICO',
+              hint: 'tu@correo.com',
               enabled: false,
               keyboardType: TextInputType.emailAddress,
-            ),
-            const SizedBox(height: 16),
-            AppTextField(
-              controller: _locationController,
-              label: 'LOCATION',
-              hint: 'Lima, Peru',
-            ),
-            const SizedBox(height: 40),
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.secondary),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Profile updated!')),
-                  );
-                  context.pop();
-                },
-                child: const Text('Save Changes'),
-              ),
             ),
           ],
         ),
@@ -123,7 +100,7 @@ class AchievementsPage extends StatelessWidget {
       create: (_) => sl<ProfileBloc>()..add(ProfileLoadAchievementsEvent()),
       child: Scaffold(
         backgroundColor: AppColors.backgroundLight,
-        appBar: AppBar(title: const Text('My Achievements')),
+        appBar: AppBar(title: const Text('Mis Logros')),
         body: BlocBuilder<ProfileBloc, ProfileState>(
           builder: (context, state) {
             if (state is ProfileLoading) {
@@ -138,10 +115,10 @@ class AchievementsPage extends StatelessWidget {
                       const Icon(Icons.emoji_events_outlined,
                           size: 64, color: AppColors.textMuted),
                       const SizedBox(height: 16),
-                      Text('No achievements yet.',
+                      Text('Aún no hay logros.',
                           style: Theme.of(context).textTheme.bodyMedium),
                       const SizedBox(height: 8),
-                      Text('Keep recycling to unlock badges!',
+                      Text('¡Sigue reciclando para desbloquear insignias!',
                           style: Theme.of(context).textTheme.bodySmall),
                     ],
                   ),
@@ -179,7 +156,7 @@ class AchievementsPage extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          DateFormat('MMM d, y').format(badge.unlockedAt),
+                          DateFormat('dd/MM/yyyy').format(badge.unlockedAt),
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],

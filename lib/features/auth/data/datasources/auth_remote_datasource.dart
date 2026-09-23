@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
 import '../../../../core/constants/app_constants.dart';
-import '../../../../core/errors/failures.dart';
 import '../../../../core/network/api_client.dart';
 import '../models/user_model.dart';
 

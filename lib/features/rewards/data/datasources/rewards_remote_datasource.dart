@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
 import '../../../../core/constants/app_constants.dart';
-import '../../../../core/errors/failures.dart';
 import '../../../../core/network/api_client.dart';
 import '../models/reward_model.dart';
 
@@ -17,7 +16,7 @@ class RewardsRemoteDataSourceImpl implements RewardsRemoteDataSource {
   @override
   Future<List<RewardModel>> getActiveRewards() async {
     try {
-      final response = await _apiClient.get(AppConstants.activeRewardsEndpoint);
+      final response = await _apiClient.get(AppConstants.rewardsCatalogEndpoint);
       final data = response.data as List<dynamic>? ?? [];
       return data
           .map((e) => RewardModel.fromJson(e as Map<String, dynamic>))

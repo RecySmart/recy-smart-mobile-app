@@ -12,6 +12,9 @@ class AppTextField extends StatelessWidget {
   final String? Function(String?)? validator;
   final int maxLines;
   final bool enabled;
+  final Iterable<String>? autofillHints;
+  final TextInputAction? textInputAction;
+  final ValueChanged<String>? onFieldSubmitted;
 
   const AppTextField({
     super.key,
@@ -25,6 +28,9 @@ class AppTextField extends StatelessWidget {
     this.validator,
     this.maxLines = 1,
     this.enabled = true,
+    this.autofillHints,
+    this.textInputAction,
+    this.onFieldSubmitted,
   });
 
   @override
@@ -49,6 +55,9 @@ class AppTextField extends StatelessWidget {
           validator: validator,
           maxLines: obscureText ? 1 : maxLines,
           enabled: enabled,
+          autofillHints: autofillHints,
+          textInputAction: textInputAction,
+          onFieldSubmitted: onFieldSubmitted,
           style: Theme.of(context).textTheme.bodyLarge,
           decoration: InputDecoration(
             hintText: hint,

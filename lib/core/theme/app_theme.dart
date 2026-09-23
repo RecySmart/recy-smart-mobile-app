@@ -56,6 +56,7 @@ class AppTheme {
       inputDecorationTheme: _inputDecorationTheme,
       cardTheme: _cardTheme,
       bottomNavigationBarTheme: _bottomNavTheme,
+      snackBarTheme: const SnackBarThemeData(behavior: SnackBarBehavior.floating, showCloseIcon: true),
       dividerTheme: const DividerThemeData(
         color: Color(0xFFE5E7EB),
         thickness: 1,
@@ -118,7 +119,7 @@ class AppTheme {
       labelLarge: GoogleFonts.poppins(
         fontSize: 14,
         fontWeight: FontWeight.w600,
-        color: AppColors.textOnPrimary,
+        color: AppColors.secondary,
       ),
     );
   }
@@ -140,7 +141,7 @@ class AppTheme {
       ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.textOnPrimary,
+          foregroundColor: AppColors.secondary,
           minimumSize: const Size(double.infinity, 52),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),

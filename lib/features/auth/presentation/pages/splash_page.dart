@@ -25,9 +25,10 @@ class _SplashPageState extends State<SplashPage>
   @override
   void initState() {
     super.initState();
+    final disableAnimations = WidgetsBinding.instance.platformDispatcher.accessibilityFeatures.disableAnimations;
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1000),
+      duration: disableAnimations ? Duration.zero : const Duration(milliseconds: 1000),
     );
     _fadeAnimation =
         CurvedAnimation(parent: _controller, curve: Curves.easeIn);
@@ -86,7 +87,7 @@ class _SplashPageState extends State<SplashPage>
                   width: 100,
                   height: 100,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
+                    color: Colors.white.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -106,9 +107,9 @@ class _SplashPageState extends State<SplashPage>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Recycle. Earn. Impact.',
+                  'Recicla. Gana. Impacta.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.white.withOpacity(0.8),
+                    color: Colors.white.withValues(alpha: 0.8),
                   ),
                 ),
                 const SizedBox(height: 40),

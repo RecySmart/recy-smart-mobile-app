@@ -4,12 +4,27 @@ import 'package:flutter/foundation.dart';
 class AppConstants {
   AppConstants._();
 
-  // Make these compile-time constants so they can be used in const
-  // expressions (e.g. const String.fromEnvironment default values).
-  static const String baseUrl = 'https://curly-camera-tusk.ngrok-free.dev/api';
+  // Para uso en emulador Android por defecto
+  static const String _defaultAndroidUrl = 'http://10.0.2.2:3000';
+  // Para uso en Web/iOS por defecto
+  static const String _defaultLocalhost = 'http://localhost:3000';
 
-  // 'https://vascular-habitat-correct.ngrok-free.dev';
-  static const String socketUrl = 'https://curly-camera-tusk.ngrok-free.dev';
+  static String get _base {
+    if (kIsWeb) return _defaultLocalhost;
+    return Platform.isAndroid ? _defaultAndroidUrl : _defaultLocalhost;
+  }
+
+  static String get baseUrl {
+    return const String.fromEnvironment('API_URL', defaultValue: '') != '' 
+      ? const String.fromEnvironment('API_URL') 
+      : '$_base/api';
+  }
+
+  static String get socketUrl {
+    return const String.fromEnvironment('SOCKET_URL', defaultValue: '') != '' 
+      ? const String.fromEnvironment('SOCKET_URL') 
+      : _base;
+  }
 
   // 'https://vascular-habitat-correct.ngrok-free.dev';
 
@@ -49,14 +64,17 @@ class AppConstants {
   // Recycling / IoT endpoints
   static const String startSessionEndpoint = '/iot/bin/start/session';
   static const String endSessionEndpoint = '/iot/bin/end/session';
+  static const String sessionStatusEndpoint = '/iot/bin/session';
 
   // Gamification endpoints
   static const String activeRewardsEndpoint = '/rewards/active';
+  static const String rewardsCatalogEndpoint = '/rewards/catalog';
   static const String redeemCouponEndpoint = '/coupons/redeem';
   static const String myCouponsEndpoint = '/coupons';
   static const String transactionHistoryEndpoint = '/transactions/history';
   static const String myAchievementsEndpoint = '/achievements/my-badges';
   static const String levelsEndpoint = '/levels';
+  static const String rankingEndpoint = '/rankings';
 
   // --- Secure Storage Keys ---
   static const String accessTokenKey = 'access_token';
@@ -64,6 +82,7 @@ class AppConstants {
   static const String userRoleKey = 'user_role';
   static const String userNameKey = 'user_name';
   static const String userEmailKey = 'user_email';
+  static const String activeRecyclingSessionKey = 'active_recycling_session';
 
   // --- SharedPrefs Keys ---
   static const String onboardingDoneKey = 'onboarding_done';

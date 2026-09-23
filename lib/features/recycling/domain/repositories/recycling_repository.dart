@@ -12,4 +12,5 @@ abstract class RecyclingRepository {
   });
 
   Future<Either<Failure, void>> endSession(String sessionId);
+  Future<Either<Failure, RecyclingSessionSnapshot>> getSessionStatus(String sessionId);
 }

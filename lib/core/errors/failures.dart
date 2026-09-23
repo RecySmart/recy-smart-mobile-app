@@ -13,7 +13,7 @@ class ServerFailure extends Failure {
 }
 
 class NetworkFailure extends Failure {
-  const NetworkFailure([super.message = 'No internet connection. Please check your network.']);
+  const NetworkFailure([super.message = 'Sin conexión a Internet. Revisa tu red e inténtalo de nuevo.']);
 }
 
 class AuthFailure extends Failure {
@@ -21,7 +21,7 @@ class AuthFailure extends Failure {
 }
 
 class UnauthorizedFailure extends Failure {
-  const UnauthorizedFailure([super.message = 'Session expired. Please log in again.']);
+  const UnauthorizedFailure([super.message = 'Tu sesión expiró. Inicia sesión de nuevo.']);
 }
 
 class NotFoundFailure extends Failure {
@@ -29,7 +29,7 @@ class NotFoundFailure extends Failure {
 }
 
 class CacheFailure extends Failure {
-  const CacheFailure([super.message = 'Local data error. Please try again.']);
+  const CacheFailure([super.message = 'No se pudieron leer los datos locales. Inténtalo de nuevo.']);
 }
 
 class ValidationFailure extends Failure {

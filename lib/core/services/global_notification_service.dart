@@ -1,42 +1,46 @@
 import 'package:flutter/foundation.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import '../constants/app_constants.dart';
+import '../utils/storage_service.dart';
 
 typedef AchievementCallback   = void Function(Map<String, dynamic> data);
 typedef CouponValidatedCallback = void Function(Map<String, dynamic> data);
 typedef PointsUpdateCallback  = void Function(Map<String, dynamic> data);
 
-/// Persistent app-wide socket connection.
-/// Unlike SocketService (session-scoped, used during active recycling),
-/// this connects once the user logs in and stays alive for the whole
-/// app lifetime, listening to the user's personal room for:
-///   - achievement_unlocked  (new badge earned)
-///   - coupon_validated      (partner store scanned/validated a coupon)
-///   - points_update         (any wallet balance change)
 class GlobalNotificationService {
+  final StorageService _storage;
   io.Socket? _socket;
   bool _isConnected = false;
   String? _currentUserId;
 
+  GlobalNotificationService(this._storage);
+
   bool get isConnected => _isConnected;
 
-  void connect({
+  Future<void> connect({
     required String userId,
     required AchievementCallback onAchievementUnlocked,
     required CouponValidatedCallback onCouponValidated,
     required PointsUpdateCallback onPointsUpdate,
-  }) {
+  }) async {
     // Avoid reconnecting if already connected for the same user
     if (_isConnected && _currentUserId == userId) return;
 
     disconnect();
     _currentUserId = userId;
+    
+    final token = await _storage.read(key: AppConstants.accessTokenKey) ?? '';
 
     _socket = io.io(
       AppConstants.socketUrl,
       io.OptionBuilder()
-          .setTransports(['websocket', 'polling'])
+          .setTransports(['websocket'])
           .setPath('/api/socket.io')
+          .setExtraHeaders({
+            'Authorization': 'Bearer $token',
+            'ngrok-skip-browser-warning': 'true',
+            'Bypass-Tunnel-Reminder': 'true',
+          })
           .disableAutoConnect()
           .enableReconnection()
           .setReconnectionAttempts(10)

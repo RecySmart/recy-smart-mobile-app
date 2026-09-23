@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
 import '../../../../core/constants/app_constants.dart';
-import '../../../../core/errors/failures.dart';
 import '../../../../core/network/api_client.dart';
 import '../models/recycling_session_model.dart';
 
@@ -14,6 +13,7 @@ abstract class RecyclingRemoteDataSource {
   });
 
   Future<void> endSession(String sessionId);
+  Future<RecyclingSessionSnapshotModel> getSessionStatus(String sessionId);
 }
 
 class RecyclingRemoteDataSourceImpl implements RecyclingRemoteDataSource {
@@ -54,6 +54,20 @@ class RecyclingRemoteDataSourceImpl implements RecyclingRemoteDataSource {
       await _apiClient.post(
         AppConstants.endSessionEndpoint,
         data: {'sessionId': sessionId},
+      );
+    } on DioException catch (e) {
+      throw ApiClient.handleDioError(e);
+    }
+  }
+
+  @override
+  Future<RecyclingSessionSnapshotModel> getSessionStatus(String sessionId) async {
+    try {
+      final response = await _apiClient.get(
+        '${AppConstants.sessionStatusEndpoint}/$sessionId',
+      );
+      return RecyclingSessionSnapshotModel.fromJson(
+        response.data as Map<String, dynamic>,
       );
     } on DioException catch (e) {
       throw ApiClient.handleDioError(e);

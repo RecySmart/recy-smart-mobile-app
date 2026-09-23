@@ -27,7 +27,16 @@ class Reward extends Equatable {
     this.category = 'General',
   });
 
-  bool get isAvailable => status == 'ACTIVE' && remainingStock > 0;
+  bool get isExpired => expiresAt != null &&
+      (DateTime.tryParse(expiresAt!)?.isBefore(DateTime.now()) ?? false);
+  bool get isAvailable =>
+      status == 'ACTIVE' && remainingStock > 0 && !isExpired;
+  String get availabilityLabel {
+    if (isExpired) return 'Vencido';
+    if (status == 'DISCONTINUED') return 'Pausado';
+    if (status == 'OUT_OF_STOCK' || remainingStock <= 0) return 'Agotado';
+    return isAvailable ? 'Canjear Premio' : 'No disponible';
+  }
 
   @override
   List<Object?> get props =>

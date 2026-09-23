@@ -29,6 +29,13 @@ class MapBinSelectedEvent extends MapEvent {
 
 class MapBinDismissedEvent extends MapEvent {}
 
+class MapSearchQueryChangedEvent extends MapEvent {
+  final String query;
+  const MapSearchQueryChangedEvent(this.query);
+  @override
+  List<Object> get props => [query];
+}
+
 class MapUserLocationUpdatedEvent extends MapEvent {
   final LatLng location;
   const MapUserLocationUpdatedEvent(this.location);
@@ -50,6 +57,7 @@ class MapLoaded extends MapState {
   final List<SmartBin> allBins;
   final List<SmartBin> filteredBins;
   final String selectedFilter;
+  final String searchQuery;
   final SmartBin? selectedBin;
   final LatLng? userLocation;
 
@@ -57,6 +65,7 @@ class MapLoaded extends MapState {
     required this.allBins,
     required this.filteredBins,
     this.selectedFilter = 'Todos',
+    this.searchQuery = '',
     this.selectedBin,
     this.userLocation,
   });
@@ -65,6 +74,7 @@ class MapLoaded extends MapState {
     List<SmartBin>? allBins,
     List<SmartBin>? filteredBins,
     String? selectedFilter,
+    String? searchQuery,
     SmartBin? selectedBin,
     bool clearSelected = false,
     LatLng? userLocation,
@@ -73,13 +83,14 @@ class MapLoaded extends MapState {
         allBins: allBins ?? this.allBins,
         filteredBins: filteredBins ?? this.filteredBins,
         selectedFilter: selectedFilter ?? this.selectedFilter,
+        searchQuery: searchQuery ?? this.searchQuery,
         selectedBin: clearSelected ? null : (selectedBin ?? this.selectedBin),
         userLocation: userLocation ?? this.userLocation,
       );
 
   @override
   List<Object?> get props =>
-      [allBins, filteredBins, selectedFilter, selectedBin, userLocation];
+      [allBins, filteredBins, selectedFilter, searchQuery, selectedBin, userLocation];
 }
 
 class MapError extends MapState {
@@ -96,6 +107,7 @@ class MapBloc extends Bloc<MapEvent, MapState> {
   MapBloc(this._getAllBins) : super(MapInitial()) {
     on<MapLoadBinsEvent>(_onLoad);
     on<MapFilterChangedEvent>(_onFilter);
+    on<MapSearchQueryChangedEvent>(_onSearch);
     on<MapBinSelectedEvent>(_onBinSelected);
     on<MapBinDismissedEvent>(_onBinDismissed);
     on<MapUserLocationUpdatedEvent>(_onLocationUpdated);
@@ -110,26 +122,39 @@ class MapBloc extends Bloc<MapEvent, MapState> {
     );
   }
 
+  List<SmartBin> _applyFilters(List<SmartBin> bins, String filter, String query) {
+    var result = bins;
+    if (filter == 'Disponibles') {
+      result = result.where((b) => b.isAvailable).toList();
+    } else if (filter == 'Aceptan Latas') {
+      result = result.where((b) => b.status != BinStatus.offline).toList();
+    }
+    
+    if (query.isNotEmpty) {
+      final q = query.toLowerCase();
+      result = result.where((b) => b.locationName.toLowerCase().contains(q) ).toList();
+    }
+    return result;
+  }
+
   void _onFilter(MapFilterChangedEvent event, Emitter<MapState> emit) {
     if (state is! MapLoaded) return;
     final current = state as MapLoaded;
-    List<SmartBin> filtered;
-    switch (event.filter) {
-      case 'Disponibles':
-        filtered = current.allBins.where((b) => b.isAvailable).toList();
-        break;
-      case 'Aceptan Latas':
-      // All bins accept PET — filter by status != offline
-        filtered = current.allBins
-            .where((b) => b.status != BinStatus.offline)
-            .toList();
-        break;
-      default:
-        filtered = current.allBins;
-    }
+    final filtered = _applyFilters(current.allBins, event.filter, current.searchQuery);
     emit(current.copyWith(
       filteredBins: filtered,
       selectedFilter: event.filter,
+      clearSelected: true,
+    ));
+  }
+
+  void _onSearch(MapSearchQueryChangedEvent event, Emitter<MapState> emit) {
+    if (state is! MapLoaded) return;
+    final current = state as MapLoaded;
+    final filtered = _applyFilters(current.allBins, current.selectedFilter, event.query);
+    emit(current.copyWith(
+      filteredBins: filtered,
+      searchQuery: event.query,
       clearSelected: true,
     ));
   }
