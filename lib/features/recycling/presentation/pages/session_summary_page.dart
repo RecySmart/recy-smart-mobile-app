@@ -5,6 +5,7 @@ import '../../../../core/utils/app_router.dart';
 import '../../../../core/utils/injection_container.dart';
 import '../../../auth/domain/usecases/get_profile_usecase.dart';
 import '../../../profile/domain/usecases/get_transaction_history_usecase.dart';
+import '../../domain/usecases/start_session_usecase.dart';
 
 class SessionSummaryPage extends StatefulWidget {
   final String sessionId;
@@ -28,6 +29,8 @@ class _SessionSummaryPageState extends State<SessionSummaryPage> {
   bool _checking = false;
   bool _creditConfirmed = false;
   int? _balance;
+  int? _bottlesAccepted;
+  int? _pointsCalculated;
   String? _error;
 
   @override
@@ -42,13 +45,24 @@ class _SessionSummaryPageState extends State<SessionSummaryPage> {
       _checking = true;
       _error = null;
       _balance = null;
+      _bottlesAccepted = null;
+      _pointsCalculated = null;
+      _creditConfirmed = false;
     });
+    final sessionStatus = await sl<GetSessionStatusUseCase>()(widget.sessionId);
     final history = await sl<GetTransactionHistoryUseCase>()();
     final profile = await sl<GetProfileUseCase>()();
     if (!mounted) return;
     setState(() {
+      sessionStatus.fold(
+        (failure) => _error = 'No se pudo verificar el recuento de la sesión: ${failure.message}',
+        (snapshot) {
+          _bottlesAccepted = snapshot.bottlesAccepted;
+          _pointsCalculated = snapshot.pointsCalculated;
+        },
+      );
       history.fold(
-        (failure) => _error = 'No se pudo consultar el historial: ${failure.message}',
+        (failure) => _error ??= 'No se pudo consultar el historial: ${failure.message}',
         (transactions) => _creditConfirmed = transactions.any((transaction) =>
             transaction.source == 'RECYCLING_DROP' &&
             transaction.reference == widget.sessionId),
@@ -134,14 +148,16 @@ class _SessionSummaryPageState extends State<SessionSummaryPage> {
                       children: [
                         Expanded(
                           child: _ImpactTile(
-                            value: '${widget.bottlesDropped}',
+                            value: _bottlesAccepted?.toString() ?? '—',
                             label: 'Botellas aceptadas',
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: _ImpactTile(
-                            value: '+${widget.pointsEarned}',
+                            value: _pointsCalculated == null
+                                ? '—'
+                                : '+$_pointsCalculated',
                             label: 'EcoPuntos calculados',
                           ),
                         ),

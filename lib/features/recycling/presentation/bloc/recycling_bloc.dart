@@ -48,6 +48,9 @@ class RecyclingTimerTickEvent extends RecyclingEvent {
   List<Object> get props => [secondsRemaining];
 }
 
+/// Reconcile the active session with the server when a socket event is missed.
+class RecyclingSyncSessionEvent extends RecyclingEvent {}
+
 /// Local timer hit 0 — fallback if WS never sends session_timeout
 class RecyclingLocalTimeoutEvent extends RecyclingEvent {}
 
@@ -162,6 +165,7 @@ class RecyclingBloc extends Bloc<RecyclingEvent, RecyclingState> {
   Timer? _tickTimer;
   int _secondsRemaining = AppConstants.sessionAutoCloseSeconds;
   bool _restoring = false;
+  bool _syncingStatus = false;
 
   RecyclingBloc({
     required StartSessionUseCase startSession,
@@ -183,6 +187,7 @@ class RecyclingBloc extends Bloc<RecyclingEvent, RecyclingState> {
     on<RecyclingFinishSessionEvent>(_onFinishSession);
     on<RecyclingWsSessionUpdateEvent>(_onWsSessionUpdate);
     on<RecyclingTimerTickEvent>(_onTimerTick);
+    on<RecyclingSyncSessionEvent>(_onSyncSession);
     on<RecyclingLocalTimeoutEvent>(_onLocalTimeout);
     on<RecyclingClearRejectionEvent>(_onClearRejection);
     on<RecyclingRestoreSessionEvent>(_onRestoreSession);
@@ -517,6 +522,67 @@ class RecyclingBloc extends Bloc<RecyclingEvent, RecyclingState> {
     emit((state as RecyclingSessionActive).copyWithTimer(event.secondsRemaining));
   }
 
+  Future<void> _onSyncSession(
+      RecyclingSyncSessionEvent event, Emitter<RecyclingState> emit) async {
+    if (_syncingStatus || state is! RecyclingSessionActive ||
+        (state as RecyclingSessionActive).isEnding) {
+      return;
+    }
+    _syncingStatus = true;
+    final sessionId = (state as RecyclingSessionActive).session.sessionId;
+    try {
+      final result = await _getSessionStatus(sessionId);
+      final snapshot = result.fold<RecyclingSessionSnapshot?>(
+        (_) => null,
+        (value) => value,
+      );
+      if (snapshot == null || state is! RecyclingSessionActive) return;
+      final active = state as RecyclingSessionActive;
+      if (active.session.sessionId != sessionId || active.isEnding) return;
+
+      if (!snapshot.isActive) {
+        await _storage.delete(key: AppConstants.activeRecyclingSessionKey);
+        _cancelLocalTimer();
+        _socketService.disconnect();
+        _homeBloc.add(HomeRefreshEvent());
+        emit(RecyclingSessionCompleted(
+          session: active.session.copyWith(
+            bottlesDropped: snapshot.bottlesAccepted,
+            pointsEarned: snapshot.pointsCalculated,
+            co2Saved: snapshot.bottlesAccepted * 0.04,
+          ),
+          autoClosed: snapshot.status == 'EXPIRED',
+        ));
+        return;
+      }
+
+      final seconds = snapshot.expiresAt?.difference(DateTime.now()).inSeconds;
+      if (seconds != null && seconds > 0) {
+        _resetLocalTimer(seconds);
+      }
+      if (active.session.bottlesDropped != snapshot.bottlesAccepted ||
+          active.session.pointsEarned != snapshot.pointsCalculated ||
+          active.timerSeconds != _secondsRemaining) {
+        emit(RecyclingSessionActive(
+          session: active.session.copyWith(
+            bottlesDropped: snapshot.bottlesAccepted,
+            pointsEarned: snapshot.pointsCalculated,
+            co2Saved: snapshot.bottlesAccepted * 0.04,
+          ),
+          timerSeconds: _secondsRemaining,
+          bottleRejected: active.bottleRejected,
+          bottleError: active.bottleError,
+          rejectionCount: active.rejectionCount,
+          recovered: active.recovered,
+        ));
+      }
+    } catch (error) {
+      debugPrint('No se pudo sincronizar la sesión $sessionId: $error');
+    } finally {
+      _syncingStatus = false;
+    }
+  }
+
   Future<void> _onLocalTimeout(
       RecyclingLocalTimeoutEvent event, Emitter<RecyclingState> emit) async {
     if (state is! RecyclingSessionActive) return;
@@ -557,7 +623,10 @@ class RecyclingBloc extends Bloc<RecyclingEvent, RecyclingState> {
         t.cancel();
         if (!isClosed) add(RecyclingLocalTimeoutEvent());
       } else {
-        if (!isClosed) add(RecyclingTimerTickEvent(_secondsRemaining));
+        if (!isClosed) {
+          add(RecyclingTimerTickEvent(_secondsRemaining));
+          if (_secondsRemaining % 5 == 0) add(RecyclingSyncSessionEvent());
+        }
       }
     });
   }

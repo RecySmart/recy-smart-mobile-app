@@ -32,6 +32,9 @@ class SocketService {
       io.OptionBuilder()
           .setTransports(['websocket'])
           .setPath('/api/socket.io')
+          // The app-wide socket may already be connected to this same namespace.
+          // Reusing it would skip onConnect and therefore skip joinSession.
+          .enableForceNew()
           .setExtraHeaders({
             'Authorization': 'Bearer $token',
             'ngrok-skip-browser-warning': 'true',

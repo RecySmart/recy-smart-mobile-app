@@ -29,6 +29,7 @@ class ActiveSessionPage extends StatelessWidget {
               'bottlesDropped': state.session.bottlesDropped,
               'pointsEarned': state.session.pointsEarned,
               'co2Saved': state.session.co2Saved,
+              'sessionId': state.session.sessionId,
               'autoClosed': state.autoClosed,
             },
           );
@@ -330,18 +331,21 @@ class ActiveSessionPage extends StatelessWidget {
                                   : AppColors.textMuted,
                             ),
                             const SizedBox(width: 6),
-                            Text(
-                              'Se cierra en ${timerSeconds}s de inactividad',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                color: timerSeconds <= 10
-                                    ? AppColors.error
-                                    : AppColors.textMuted,
-                                fontWeight: timerSeconds <= 10
-                                    ? FontWeight.w600
-                                    : FontWeight.w400,
+                            Flexible(
+                              child: Text(
+                                'Se cierra en ${timerSeconds}s de inactividad',
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                  color: timerSeconds <= 10
+                                      ? AppColors.error
+                                      : AppColors.textMuted,
+                                  fontWeight: timerSeconds <= 10
+                                      ? FontWeight.w600
+                                      : FontWeight.w400,
+                                ),
                               ),
                             ),
                           ],
@@ -356,6 +360,7 @@ class ActiveSessionPage extends StatelessWidget {
                         child: ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.secondary,
+                            foregroundColor: Colors.white,
                           ),
                           icon: const Icon(Icons.arrow_forward_rounded),
                           label: const Text('Finalizar Sesión'),

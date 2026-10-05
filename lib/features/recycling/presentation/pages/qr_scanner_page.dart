@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/app_router.dart';
-import '../../../../core/utils/injection_container.dart';
 import '../bloc/recycling_bloc.dart';
 
 class QrScannerPage extends StatefulWidget {
@@ -315,6 +314,7 @@ class _QrScannerPageState extends State<QrScannerPage> {
                         child: ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.secondary,
+                            foregroundColor: Colors.white,
                           ),
                           icon: const Icon(Icons.keyboard_rounded),
                           label: const Text('Ingresar código manualmente'),

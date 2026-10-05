@@ -503,7 +503,7 @@ class _BinInfoSheet extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Estado de Capacidad',
+                  'Capacidad',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 Text(

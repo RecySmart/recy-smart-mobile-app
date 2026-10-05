@@ -173,6 +173,24 @@ void main() {
     verify(() => status('session-1')).called(1);
   });
 
+  test('server sync updates bottles and points after a missed socket event', () async {
+    when(() => status('session-1')).thenAnswer((_) async => const Right(
+      RecyclingSessionSnapshot(
+        sessionId: 'session-1', smartBinId: 'bin-1', status: 'IN_PROGRESS',
+        bottlesAccepted: 2, pointsCalculated: 20,
+      ),
+    ));
+    await startDemoSession();
+
+    final updated = bloc.stream.firstWhere((s) =>
+        s is RecyclingSessionActive && s.session.bottlesDropped == 2);
+    bloc.add(RecyclingSyncSessionEvent());
+    final state = await updated as RecyclingSessionActive;
+
+    expect(state.session.pointsEarned, 20);
+    verify(() => status('session-1')).called(1);
+  });
+
   test('restores active server session after restart', () async {
     when(() => storage.read(key: AppConstants.activeRecyclingSessionKey))
         .thenAnswer((_) async => '{"userId":"user-1","sessionId":"session-1"}');
