@@ -77,8 +77,10 @@ class _LoginPageState extends State<LoginPage> {
                           color: AppColors.primaryLight,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.recycling_rounded,
-                            size: 44, color: AppColors.primary),
+                        child: Image.asset(
+                          'assets/branding/recysmart-symbol.png',
+                          semanticLabel: 'Logo de RecySmart',
+                        ),
                       ),
                       const SizedBox(height: 24),
                       Text('Bienvenido',

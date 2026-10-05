@@ -86,14 +86,13 @@ class _SplashPageState extends State<SplashPage>
                 Container(
                   width: 100,
                   height: 100,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
-                    Icons.recycling_rounded,
-                    size: 60,
-                    color: Colors.white,
+                  child: Image.asset(
+                    'assets/branding/recysmart-symbol.png',
+                    semanticLabel: 'Logo de RecySmart',
                   ),
                 ),
                 const SizedBox(height: 20),
