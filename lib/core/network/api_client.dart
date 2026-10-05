@@ -39,7 +39,6 @@ class ApiClient {
           // Bypass ngrok browser warning page in web
           'ngrok-skip-browser-warning': 'true',
           // Bypass localtunnel reminder page
-          'Bypass-Tunnel-Reminder': 'true',
         },
       ),
     );

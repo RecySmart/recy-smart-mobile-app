@@ -38,7 +38,6 @@ class SocketService {
           .setExtraHeaders({
             'Authorization': 'Bearer $token',
             'ngrok-skip-browser-warning': 'true',
-            'Bypass-Tunnel-Reminder': 'true',
           })
           .disableAutoConnect()
           .enableReconnection()
