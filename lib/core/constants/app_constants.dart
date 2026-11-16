@@ -63,8 +63,10 @@ class AppConstants {
 
   // Recycling / IoT endpoints
   static const String startSessionEndpoint = '/iot/bin/start/session';
+  static const String startManualSessionEndpoint = '$startSessionEndpoint/manual';
   static const String endSessionEndpoint = '/iot/bin/end/session';
   static const String sessionStatusEndpoint = '/iot/bin/session';
+  static const String activeSessionEndpoint = '$sessionStatusEndpoint/active';
 
   // Gamification endpoints
   static const String activeRewardsEndpoint = '/rewards/active';
