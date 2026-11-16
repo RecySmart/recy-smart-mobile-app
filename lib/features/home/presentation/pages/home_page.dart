@@ -6,6 +6,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/app_router.dart';
 import '../../../../core/utils/injection_container.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../recycling/presentation/bloc/recycling_bloc.dart';
 import '../../domain/entities/home_data.dart';
 import '../bloc/home_bloc.dart';
 
@@ -167,7 +168,7 @@ class _BalanceCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'SALDO TOTAL',
+            'SALDO CANJEABLE',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: Colors.white70,
               letterSpacing: 1.2,
@@ -188,7 +189,7 @@ class _BalanceCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Text(
-                  'Pts',
+                  'EcoPuntos',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     color: Colors.white70,
                   ),
@@ -212,26 +213,7 @@ class _BalanceCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                 ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.emoji_events_rounded,
-                        color: Colors.white, size: 18),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        data.pointsToNextReward > 0
-                            ? 'A solo ${data.pointsToNextReward} puntos de tu próximo nivel'
-                            : '¡Has alcanzado el nivel máximo! 🏆',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Icon(Icons.chevron_right_rounded,
-                        color: Colors.white70, size: 18),
-                  ],
-                ),
+                child: HomeLevelProgressIndicator(progress: data.levelProgress),
               ),
             ),
           ),
@@ -241,11 +223,72 @@ class _BalanceCard extends StatelessWidget {
   }
 }
 
+class HomeLevelProgressIndicator extends StatelessWidget {
+  final HomeLevelProgress? progress;
+  const HomeLevelProgressIndicator({super.key, required this.progress});
+
+  @override
+  Widget build(BuildContext context) {
+    final level = progress;
+    final titleStyle = Theme.of(context).textTheme.titleSmall?.copyWith(
+      color: Colors.white,
+      fontWeight: FontWeight.w700,
+    );
+    final detailStyle = Theme.of(context).textTheme.bodySmall?.copyWith(
+      color: Colors.white,
+    );
+    if (level == null) {
+      return Text('Progreso de nivel no disponible', style: detailStyle);
+    }
+
+    final next = level.next;
+    final remaining = next == null
+        ? 'Nivel máximo alcanzado'
+        : 'Faltan ${level.pointsRemaining} EcoPuntos para ${next.name}';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.emoji_events_rounded, color: Colors.white, size: 18),
+            const SizedBox(width: 8),
+            Expanded(child: Text(level.current.name, style: titleStyle)),
+            const Icon(Icons.chevron_right_rounded, color: Colors.white70, size: 18),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text('${level.lifetimeEarned} EcoPuntos acumulados', style: detailStyle),
+        const SizedBox(height: 8),
+        LinearProgressIndicator(
+          value: level.fraction,
+          minHeight: 7,
+          borderRadius: BorderRadius.circular(4),
+          color: Colors.white,
+          backgroundColor: Colors.white24,
+          semanticsLabel: 'Avance de nivel',
+        ),
+        const SizedBox(height: 8),
+        Text(remaining, style: detailStyle),
+      ],
+    );
+  }
+}
+
 class _ScanButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final checking = context.select(
+      (RecyclingBloc bloc) => bloc.state is RecyclingCheckingSession,
+    );
     return GestureDetector(
-      onTap: () => context.push(AppRoutes.qrScanner),
+      onTap: checking ? null : () {
+        final auth = context.read<AuthBloc>().state;
+        if (auth is AuthAuthenticated) {
+          context.read<RecyclingBloc>().add(
+            RecyclingRestoreSessionEvent(auth.user.id, openScanner: true),
+          );
+        }
+      },
       child: Container(
         width: double.infinity,
         height: 56,
@@ -260,7 +303,7 @@ class _ScanButton extends StatelessWidget {
                 color: Colors.white, size: 22),
             const SizedBox(width: 10),
             Text(
-              'Escanear QR',
+              checking ? 'Consultando sesión…' : 'Escanear QR',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
@@ -409,7 +452,7 @@ class _RecentActivitySection extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
             ),
             child: ListView.separated(
-              padding: EdgeInsets.all(0),
+              padding: EdgeInsets.zero,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: activities.length,

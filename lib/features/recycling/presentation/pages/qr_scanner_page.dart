@@ -6,6 +6,120 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../core/utils/app_router.dart';
 import '../bloc/recycling_bloc.dart';
 
+class ManualCodeSheet extends StatefulWidget {
+  const ManualCodeSheet({super.key});
+
+  @override
+  State<ManualCodeSheet> createState() => _ManualCodeSheetState();
+}
+
+class _ManualCodeSheetState extends State<ManualCodeSheet> {
+  final _formKey = GlobalKey<FormState>();
+  final _code = TextEditingController();
+  bool _submitting = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _code.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (_submitting || !_formKey.currentState!.validate()) return;
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+    context.read<RecyclingBloc>().add(RecyclingManualCodeSubmitted(_code.text));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocConsumer<RecyclingBloc, RecyclingState>(
+      listener: (context, state) {
+        if (!_submitting) return;
+        if (state is RecyclingSessionActive) {
+          _submitting = false;
+          Navigator.of(context).pop(true);
+        } else if (state is RecyclingManualStartFailed || state is RecyclingIdle) {
+          setState(() {
+            _submitting = false;
+            _error = state is RecyclingManualStartFailed ? state.message : null;
+          });
+        }
+      },
+      builder: (context, state) {
+        return PopScope(
+          canPop: !_submitting,
+          child: SafeArea(
+            top: false,
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                24, 24, 24, MediaQuery.viewInsetsOf(context).bottom + 24,
+              ),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text('Ingresar código del punto',
+                      style: Theme.of(context).textTheme.headlineSmall),
+                    const SizedBox(height: 8),
+                    const Text('Escribe el código del punto de reciclaje.'),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _code,
+                      autofocus: true,
+                      enabled: !_submitting,
+                      autocorrect: false,
+                      enableSuggestions: false,
+                      textCapitalization: TextCapitalization.none,
+                      textInputAction: TextInputAction.done,
+                      decoration: const InputDecoration(
+                        hintText: 'recysmart-6ce50024',
+                        prefixIcon: Icon(Icons.qr_code_rounded),
+                      ),
+                      validator: (input) {
+                        final code = input?.trim() ?? '';
+                        if (code.isEmpty) return 'Ingresa el código.';
+                        if (code.length > 128) return 'El código es demasiado largo.';
+                        return null;
+                      },
+                      onFieldSubmitted: (_) => _submit(),
+                    ),
+                    if (_error != null) ...[
+                      const SizedBox(height: 8),
+                      Semantics(
+                        liveRegion: true,
+                        child: Text(_error!,
+                          style: const TextStyle(color: AppColors.error)),
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _submitting ? null : _submit,
+                      child: Text(_submitting
+                          ? 'Conectando con el punto…'
+                          : 'Conectar al punto'),
+                    ),
+                    TextButton(
+                      onPressed: _submitting ? null : () => Navigator.of(context).pop(),
+                      child: const Text('Cancelar'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
 class QrScannerPage extends StatefulWidget {
   const QrScannerPage({super.key});
 
@@ -16,6 +130,7 @@ class QrScannerPage extends StatefulWidget {
 class _QrScannerPageState extends State<QrScannerPage> {
   final MobileScannerController _scannerController = MobileScannerController();
   bool _scanned = false;
+  bool _manualEntryOpen = false;
 
   @override
   void dispose() {
@@ -24,7 +139,7 @@ class _QrScannerPageState extends State<QrScannerPage> {
   }
 
   void _onDetect(BarcodeCapture capture) {
-    if (_scanned) return;
+    if (_scanned || _manualEntryOpen) return;
     final barcode = capture.barcodes.firstOrNull;
     if (barcode?.rawValue == null) return;
     _scanned = true;
@@ -32,97 +147,48 @@ class _QrScannerPageState extends State<QrScannerPage> {
     context.read<RecyclingBloc>().add(RecyclingQrScannedEvent(binId));
   }
 
-  void _showManualEntry() {
-    final controller = TextEditingController();
-    showModalBottomSheet(
+  Future<void> _showManualEntry() async {
+    if (_scanned || _manualEntryOpen) return;
+    _manualEntryOpen = true;
+    final bloc = context.read<RecyclingBloc>();
+    final started = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
+      isDismissible: false,
+      enableDrag: false,
       backgroundColor: AppColors.surfaceWhite,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (_) {
-        final formKey = GlobalKey<FormState>();
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 24,
-            right: 24,
-            top: 24,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-          ),
-          child: SingleChildScrollView(
-            child: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Ingresar Código del Tacho', style: Theme.of(context).textTheme.headlineSmall),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Ingresa el código impreso en el tacho inteligente.',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 20),
-                  TextFormField(
-                    controller: controller,
-                    autofocus: true,
-                    textCapitalization: TextCapitalization.characters,
-                    decoration: const InputDecoration(
-                      hintText: 'ej. BIN-001',
-                      prefixIcon: Icon(Icons.qr_code_rounded),
-                    ),
-                    validator: (v) {
-                      if (v == null || v.trim().isEmpty) return 'El código es requerido';
-                      return null;
-                    },
-                    onFieldSubmitted: (_) {
-                      if (!formKey.currentState!.validate()) return;
-                      Navigator.pop(context);
-                      _scanned = true;
-                      context.read<RecyclingBloc>().add(
-                        RecyclingQrScannedEvent(controller.text.trim()),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (!formKey.currentState!.validate()) return;
-                        Navigator.pop(context);
-                        _scanned = true;
-                        context.read<RecyclingBloc>().add(
-                          RecyclingQrScannedEvent(controller.text.trim()),
-                        );
-                      },
-                      child: const Text('Conectar al Tacho'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
+      builder: (_) => BlocProvider.value(
+        value: bloc,
+        child: const ManualCodeSheet(),
+      ),
+    );
+    if (!mounted) return;
+    _manualEntryOpen = false;
+    final state = bloc.state;
+    if (started == true && state is RecyclingSessionActive) {
+      _openSession(state);
+    }
+  }
+
+  void _openSession(RecyclingSessionActive state) {
+    context.pushReplacement(
+      AppRoutes.activeSession,
+      extra: {
+        'binId': state.session.binId,
+        'locationName': state.session.locationName,
+        'sessionId': state.session.sessionId,
       },
     );
   }
-
   @override
   Widget build(BuildContext context) {
     return BlocListener<RecyclingBloc, RecyclingState>(
       listener: (context, state) {
-        if (state is RecyclingSessionActive) {
-          context.pushReplacement(
-            AppRoutes.activeSession,
-            extra: {
-              'binId': state.session.binId,
-              'locationName': state.session.locationName,
-              'sessionId': state.session.sessionId,
-            },
-          );
+        if (state is RecyclingSessionActive && !_manualEntryOpen) {
+          _openSession(state);
         }
         if (state is RecyclingError) {
           _scanned = false;

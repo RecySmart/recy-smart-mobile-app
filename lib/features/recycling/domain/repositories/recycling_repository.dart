@@ -11,6 +11,13 @@ abstract class RecyclingRepository {
     required double longitude,
   });
 
+  Future<Either<Failure, RecyclingSession>> startManualSession({
+    required String qrToken,
+    required double latitude,
+    required double longitude,
+  });
+
   Future<Either<Failure, void>> endSession(String sessionId);
   Future<Either<Failure, RecyclingSessionSnapshot>> getSessionStatus(String sessionId);
+  Future<Either<Failure, RecyclingSessionSnapshot?>> getActiveSession();
 }

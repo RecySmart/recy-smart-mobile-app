@@ -126,7 +126,7 @@ Future<void> initDependencies() async {
 
   // ── Home ──────────────────────────────────────────────────────────────────
   sl.registerLazySingleton<HomeRemoteDataSource>(
-    () => HomeRemoteDataSourceImpl(sl()),
+    () => HomeRemoteDataSourceImpl(sl(), sl()),
   );
   sl.registerLazySingleton<HomeRepository>(() => HomeRepositoryImpl(sl()));
   sl.registerLazySingleton(() => GetHomeDataUseCase(sl()));
@@ -141,13 +141,17 @@ Future<void> initDependencies() async {
     () => RecyclingRepositoryImpl(sl()),
   );
   sl.registerLazySingleton(() => StartSessionUseCase(sl()));
+  sl.registerLazySingleton(() => StartManualSessionUseCase(sl()));
   sl.registerLazySingleton(() => EndSessionUseCase(sl()));
   sl.registerLazySingleton(() => GetSessionStatusUseCase(sl()));
+  sl.registerLazySingleton(() => GetActiveSessionUseCase(sl()));
   sl.registerLazySingleton(
     () => RecyclingBloc(
       startSession: sl<StartSessionUseCase>(),
+      startManualSession: sl<StartManualSessionUseCase>(),
       endSession: sl<EndSessionUseCase>(),
       getSessionStatus: sl<GetSessionStatusUseCase>(),
+      getActiveSession: sl<GetActiveSessionUseCase>(),
       homeBloc: sl<HomeBloc>(),
       socketService: sl<SocketService>(),
       storage: sl<StorageService>(),

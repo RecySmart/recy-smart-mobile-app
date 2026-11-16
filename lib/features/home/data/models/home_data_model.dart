@@ -1,3 +1,4 @@
+import '../../../levels/domain/entities/level.dart';
 import '../../domain/entities/home_data.dart';
 
 class RecentActivityModel extends RecentActivity {
@@ -34,23 +35,22 @@ class HomeDataModel extends HomeData {
     required super.totalPoints,
     required super.totalBottles,
     required super.co2Saved,
-    required super.pointsToNextReward,
     required super.recentActivity,
-    super.levelName,
+    super.levelProgress,
   });
 
   factory HomeDataModel.fromProfileAndTransactions(
     Map<String, dynamic> profile,
-    dynamic txData,
-  ) {
+    dynamic txData, {
+    List<Level> levels = const [],
+  }) {
     final wallet = profile['wallet'] as Map<String, dynamic>? ?? {};
     final currentBalance = (wallet['currentBalance'] as num?)?.toInt() ?? 0;
     final totalBottles = (wallet['totalBottles'] as num?)?.toInt() ?? 0;
     final totalWeight = (wallet['totalWeight'] as num?)?.toDouble() ?? 0.0;
     final co2Saved =
         (wallet['co2Saved'] as num?)?.toDouble() ?? totalWeight * 1.5;
-    final level = wallet['level'] as Map<String, dynamic>?;
-    final levelName = level?['name'] as String?;
+    final lifetimeEarned = (wallet['lifetimeEarned'] as num?)?.toInt();
 
     List<RecentActivityModel> activities = [];
     if (txData is List) {
@@ -65,19 +65,12 @@ class HomeDataModel extends HomeData {
           .toList();
     }
 
-    // 500 pts is the minimum reward threshold
-    const nextRewardThreshold = 500;
-    final pointsToNext = currentBalance >= nextRewardThreshold
-        ? 0
-        : nextRewardThreshold - currentBalance;
-
     return HomeDataModel(
       totalPoints: currentBalance,
       totalBottles: totalBottles,
       co2Saved: co2Saved,
-      pointsToNextReward: pointsToNext,
       recentActivity: activities,
-      levelName: levelName,
+      levelProgress: HomeLevelProgress.fromLevels(lifetimeEarned, levels),
     );
   }
 }

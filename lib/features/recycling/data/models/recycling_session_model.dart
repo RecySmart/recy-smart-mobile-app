@@ -9,6 +9,7 @@ class RecyclingSessionModel extends RecyclingSession {
     super.pointsEarned,
     super.co2Saved,
     super.status,
+    super.timeoutSeconds,
   });
 
   factory RecyclingSessionModel.fromJson(Map<String, dynamic> json) {
@@ -21,13 +22,15 @@ class RecyclingSessionModel extends RecyclingSession {
           session['sessionId'] as String? ?? '',
       binId: session['smartBinId'] as String? ??
           session['binId']      as String? ?? '',
-      locationName: bin['locationName'] as String? ??
+      locationName: json['locationName'] as String? ??
+          bin['locationName'] as String? ??
           bin['location']     as String? ??
           bin['name']         as String? ?? 'RecySmart Bin',
       bottlesDropped: 0,
       pointsEarned:   0,
       co2Saved:       0.0,
       status: SessionStatus.active,
+      timeoutSeconds: (json['timeoutSeconds'] as num?)?.toInt(),
     );
   }
 }
@@ -39,17 +42,21 @@ class RecyclingSessionSnapshotModel extends RecyclingSessionSnapshot {
     required super.status,
     required super.bottlesAccepted,
     required super.pointsCalculated,
+    super.locationName,
     super.expiresAt,
+    super.remainingSeconds,
   });
 
   factory RecyclingSessionSnapshotModel.fromJson(Map<String, dynamic> json) {
     return RecyclingSessionSnapshotModel(
       sessionId: json['sessionId'] as String,
       smartBinId: json['smartBinId'] as String,
+      locationName: json['locationName'] as String?,
       status: json['status'] as String,
       bottlesAccepted: (json['bottlesAccepted'] as num).toInt(),
       pointsCalculated: (json['pointsCalculated'] as num).toInt(),
       expiresAt: DateTime.tryParse(json['expiresAt'] as String? ?? ''),
+      remainingSeconds: (json['remainingSeconds'] as num?)?.toInt(),
     );
   }
 }

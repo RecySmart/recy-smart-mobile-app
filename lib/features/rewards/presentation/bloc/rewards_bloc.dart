@@ -11,11 +11,30 @@ abstract class RewardsEvent extends Equatable {
 }
 
 class RewardsLoadEvent extends RewardsEvent {}
-class RewardsCategoryFilterEvent extends RewardsEvent {
-  final String category;
-  const RewardsCategoryFilterEvent(this.category);
+class RewardsFilterChanged extends RewardsEvent {
+  final RewardFilter filter;
+  const RewardsFilterChanged(this.filter);
   @override
-  List<Object> get props => [category];
+  List<Object> get props => [filter];
+}
+
+enum RewardFilter {
+  all('Todos'),
+  active('Activos'),
+  lowStock('Poco stock'),
+  expiringSoon('Pronto a vencer'),
+  expired('Vencidos');
+
+  const RewardFilter(this.label);
+  final String label;
+
+  bool matches(Reward reward) => switch (this) {
+        RewardFilter.all => true,
+        RewardFilter.active => reward.isAvailable,
+        RewardFilter.lowStock => reward.hasLowStock,
+        RewardFilter.expiringSoon => reward.expiresSoon,
+        RewardFilter.expired => reward.isExpired,
+      };
 }
 
 class RewardsRedeemEvent extends RewardsEvent {
@@ -40,26 +59,26 @@ class RewardsLoading extends RewardsState {}
 class RewardsLoaded extends RewardsState {
   final List<Reward> rewards;
   final List<Reward> filtered;
-  final String selectedCategory;
+  final RewardFilter selectedFilter;
   final String? redeemingRewardId;
 
   const RewardsLoaded({
     required this.rewards,
     required this.filtered,
-    this.selectedCategory = 'Todos',
+    this.selectedFilter = RewardFilter.all,
     this.redeemingRewardId,
   });
 
   RewardsLoaded copyWith({
     List<Reward>? rewards,
     List<Reward>? filtered,
-    String? selectedCategory,
+    RewardFilter? selectedFilter,
     String? redeemingRewardId,
   }) {
     return RewardsLoaded(
       rewards: rewards ?? this.rewards,
       filtered: filtered ?? this.filtered,
-      selectedCategory: selectedCategory ?? this.selectedCategory,
+      selectedFilter: selectedFilter ?? this.selectedFilter,
       // If redeemingRewardId is passed as null in copyWith, it remains null. 
       // To specifically clear it, we just provide the constructor directly below.
       redeemingRewardId: redeemingRewardId ?? this.redeemingRewardId,
@@ -70,13 +89,13 @@ class RewardsLoaded extends RewardsState {
     return RewardsLoaded(
       rewards: rewards,
       filtered: filtered,
-      selectedCategory: selectedCategory,
+      selectedFilter: selectedFilter,
       redeemingRewardId: null,
     );
   }
 
   @override
-  List<Object?> get props => [rewards, filtered, selectedCategory, redeemingRewardId];
+  List<Object?> get props => [rewards, filtered, selectedFilter, redeemingRewardId];
 }
 
 class RewardsRedeemSuccess extends RewardsState {
@@ -110,7 +129,7 @@ class RewardsBloc extends Bloc<RewardsEvent, RewardsState> {
   RewardsBloc(this._getActiveRewards, this._redeemReward, this._getMyCoupons)
       : super(RewardsInitial()) {
     on<RewardsLoadEvent>(_onLoad);
-    on<RewardsCategoryFilterEvent>(_onFilter);
+    on<RewardsFilterChanged>(_onFilter);
     on<RewardsRedeemEvent>(_onRedeem);
     on<RewardsLoadCouponsEvent>(_onLoadCoupons);
   }
@@ -130,16 +149,12 @@ class RewardsBloc extends Bloc<RewardsEvent, RewardsState> {
     }
   }
 
-  void _onFilter(RewardsCategoryFilterEvent event, Emitter<RewardsState> emit) {
-    if (state is! RewardsLoaded) return;
-    final current = state as RewardsLoaded;
-    final filtered = event.category == 'Todos'
-        ? current.rewards
-        : current.rewards.where((r) => r.category == event.category).toList();
-    
-    emit(current.clearRedeeming().copyWith(
-      filtered: filtered,
-      selectedCategory: event.category,
+  void _onFilter(RewardsFilterChanged event, Emitter<RewardsState> emit) {
+    final current = state;
+    if (current is! RewardsLoaded || current.redeemingRewardId != null) return;
+    emit(current.copyWith(
+      filtered: current.rewards.where(event.filter.matches).toList(),
+      selectedFilter: event.filter,
     ));
   }
 

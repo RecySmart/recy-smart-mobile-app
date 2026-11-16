@@ -42,8 +42,6 @@ class _RewardsStorePageState extends State<RewardsStorePage> {
 class _RewardsView extends StatelessWidget {
   const _RewardsView();
 
-  static const _categories = ['Todos', 'Comida y bebidas', 'Transporte', 'Eco', 'General'];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -77,24 +75,24 @@ class _RewardsView extends StatelessWidget {
               child: BlocBuilder<RewardsBloc, RewardsState>(
                 builder: (context, state) {
                   final selected = state is RewardsLoaded
-                      ? state.selectedCategory
-                      : 'Todos';
+                      ? state.selectedFilter
+                      : RewardFilter.all;
                   return SizedBox(
                     height: 48,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: _categories.length,
+                      itemCount: RewardFilter.values.length,
                       separatorBuilder: (_, __) => const SizedBox(width: 8),
                       itemBuilder: (_, i) {
-                        final cat = _categories[i];
-                        final isSelected = cat == selected;
+                        final filter = RewardFilter.values[i];
+                        final isSelected = filter == selected;
                         return FilterChip(
-                          label: Text(cat),
+                          label: Text(filter.label),
                           selected: isSelected,
                           onSelected: (_) => context
                               .read<RewardsBloc>()
-                              .add(RewardsCategoryFilterEvent(cat)),
+                              .add(RewardsFilterChanged(filter)),
                           backgroundColor: AppColors.surfaceWhite,
                           selectedColor: AppColors.secondary,
                           labelStyle: TextStyle(
@@ -144,7 +142,7 @@ class _RewardsView extends StatelessWidget {
                 if (state is RewardsLoaded) {
                   if (state.filtered.isEmpty) {
                     return const SliverFillRemaining(
-                      child: Center(child: Text('No hay premios en esta categoría.')),
+                      child: Center(child: Text('No hay premios para este filtro.')),
                     );
                   }
                   return SliverPadding(

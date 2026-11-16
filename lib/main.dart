@@ -11,8 +11,6 @@ import 'features/recycling/presentation/bloc/recycling_bloc.dart';
 import 'features/notifications/presentation/bloc/app_notifications_bloc.dart';
 import 'features/notifications/presentation/widgets/global_notification_overlay.dart';
 
-import 'package:flutter/services.dart';
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
@@ -89,6 +87,7 @@ class RecySmartApp extends StatelessWidget {
                 context
                     .read<AppNotificationsBloc>()
                     .add(AppNotificationsDisconnectEvent());
+                context.read<RecyclingBloc>().add(RecyclingResetEvent());
                 router.go(AppRoutes.login);
 
                 if (state is AuthSessionExpired) {
@@ -112,8 +111,17 @@ class RecySmartApp extends StatelessWidget {
             },
             // Wrap the whole navigable app with the global notification overlay
             child: BlocListener<RecyclingBloc, RecyclingState>(
+              listenWhen: (previous, current) =>
+                  current is! RecyclingSessionActive ||
+                  previous is! RecyclingSessionActive ||
+                  previous.session.sessionId != current.session.sessionId,
               listener: (context, state) {
-                if (state is RecyclingSessionActive && state.recovered) {
+                if (state is RecyclingReadyToScan) {
+                  if (router.routeInformationProvider.value.uri.path !=
+                      AppRoutes.qrScanner) {
+                    router.push(AppRoutes.qrScanner);
+                  }
+                } else if (state is RecyclingSessionActive && state.recovered) {
                   router.go(AppRoutes.activeSession, extra: {
                     'binId': state.session.binId,
                     'locationName': state.session.locationName,
@@ -138,7 +146,10 @@ class RecySmartApp extends StatelessWidget {
                       action: SnackBarAction(
                         label: 'Reintentar',
                         onPressed: () => context.read<RecyclingBloc>().add(
-                          RecyclingRestoreSessionEvent(state.userId),
+                          RecyclingRestoreSessionEvent(
+                            state.userId,
+                            openScanner: state.openScanner,
+                          ),
                         ),
                       ),
                     ));

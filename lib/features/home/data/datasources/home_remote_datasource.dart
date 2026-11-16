@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../levels/data/datasources/levels_remote_datasource.dart';
+import '../../../levels/domain/entities/level.dart';
 import '../models/home_data_model.dart';
 
 abstract class HomeRemoteDataSource {
@@ -9,30 +11,40 @@ abstract class HomeRemoteDataSource {
 
 class HomeRemoteDataSourceImpl implements HomeRemoteDataSource {
   final ApiClient _apiClient;
-  HomeRemoteDataSourceImpl(this._apiClient);
+  final LevelsRemoteDataSource _levels;
+  HomeRemoteDataSourceImpl(this._apiClient, this._levels);
 
   @override
   Future<HomeDataModel> getHomeData() async {
     try {
-      // Only fetch profile — skip transactions to avoid 500 if gamification-ms is down
       final profileResponse = await _apiClient.get(AppConstants.profileEndpoint);
       final profileData = profileResponse.data as Map<String, dynamic>;
 
-      // Try transactions separately — if it fails, use empty list
-      dynamic txData = [];
-      try {
-        final txResponse = await _apiClient.get(
-          AppConstants.transactionHistoryEndpoint,
-        );
-        txData = txResponse.data;
-      } catch (_) {
-        // gamification-ms may not be running — show empty activity
-        txData = [];
-      }
-
-      return HomeDataModel.fromProfileAndTransactions(profileData, txData);
+      final activity = _loadActivity();
+      final levels = _loadLevels();
+      return HomeDataModel.fromProfileAndTransactions(
+        profileData,
+        await activity,
+        levels: await levels,
+      );
     } on DioException catch (e) {
       throw ApiClient.handleDioError(e);
+    }
+  }
+
+  Future<Object?> _loadActivity() async {
+    try {
+      return (await _apiClient.get(AppConstants.transactionHistoryEndpoint)).data;
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<List<Level>> _loadLevels() async {
+    try {
+      return await _levels.getLevels();
+    } catch (_) {
+      return [];
     }
   }
 }

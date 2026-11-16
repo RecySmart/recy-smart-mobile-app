@@ -11,6 +11,7 @@ class SocketService {
   final StorageService _storage;
   io.Socket? _socket;
   bool _isConnected = false;
+  int _connectionGeneration = 0;
   
   SocketService(this._storage);
   
@@ -22,12 +23,15 @@ class SocketService {
     required SessionUpdateCallback onSessionUpdate,
     required PointsUpdateCallback onPointsUpdate,
     required AchievementCallback onAchievementUnlocked,
+    VoidCallback? onReconnected,
   }) async {
     disconnect();
-    
-    final token = await _storage.read(key: AppConstants.accessTokenKey) ?? '';
+    final generation = _connectionGeneration;
 
-    _socket = io.io(
+    final token = await _storage.read(key: AppConstants.accessTokenKey) ?? '';
+    if (generation != _connectionGeneration) return;
+
+    final socket = io.io(
       AppConstants.socketUrl,
       io.OptionBuilder()
           .setTransports(['websocket'])
@@ -46,11 +50,15 @@ class SocketService {
           .build(),
     );
 
-    _socket!.onConnect((_) {
+    _socket = socket;
+    var wasConnected = false;
+    socket.onConnect((_) {
       _isConnected = true;
       debugPrint('✅ Socket.io connected to ${AppConstants.socketUrl}');
-      _socket!.emit('joinSession', {'sessionId': sessionId});
-      _socket!.emit('joinUser',    {'userId': userId});
+      socket.emit('joinSession', {'sessionId': sessionId});
+      socket.emit('joinUser', {'userId': userId});
+      if (wasConnected) onReconnected?.call();
+      wasConnected = true;
     });
 
     _socket!.onDisconnect((_) {
@@ -76,6 +84,7 @@ class SocketService {
   }
 
   void disconnect() {
+    _connectionGeneration++;
     _socket?.disconnect();
     _socket?.dispose();
     _socket = null;

@@ -12,8 +12,15 @@ abstract class RecyclingRemoteDataSource {
     required double longitude,
   });
 
+  Future<RecyclingSessionModel> startManualSession({
+    required String qrToken,
+    required double latitude,
+    required double longitude,
+  });
+
   Future<void> endSession(String sessionId);
   Future<RecyclingSessionSnapshotModel> getSessionStatus(String sessionId);
+  Future<RecyclingSessionSnapshotModel?> getActiveSession();
 }
 
 class RecyclingRemoteDataSourceImpl implements RecyclingRemoteDataSource {
@@ -49,12 +56,49 @@ class RecyclingRemoteDataSourceImpl implements RecyclingRemoteDataSource {
   }
 
   @override
+  Future<RecyclingSessionModel> startManualSession({
+    required String qrToken,
+    required double latitude,
+    required double longitude,
+  }) async {
+    try {
+      final response = await _apiClient.post(
+        AppConstants.startManualSessionEndpoint,
+        data: {
+          'qrToken': qrToken,
+          'userLocation': {'latitude': latitude, 'longitude': longitude},
+        },
+      );
+      return RecyclingSessionModel.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw ApiClient.handleDioError(e);
+    }
+  }
+
+  @override
   Future<void> endSession(String sessionId) async {
     try {
       await _apiClient.post(
         AppConstants.endSessionEndpoint,
         data: {'sessionId': sessionId},
       );
+    } on DioException catch (e) {
+      throw ApiClient.handleDioError(e);
+    }
+  }
+
+  @override
+  Future<RecyclingSessionSnapshotModel?> getActiveSession() async {
+    try {
+      final response = await _apiClient.get(AppConstants.activeSessionEndpoint);
+      final body = response.data as Map<String, dynamic>;
+      if (!body.containsKey('session')) {
+        throw const FormatException('Missing active session response');
+      }
+      final session = body['session'] as Map<String, dynamic>?;
+      return session == null
+          ? null
+          : RecyclingSessionSnapshotModel.fromJson(session);
     } on DioException catch (e) {
       throw ApiClient.handleDioError(e);
     }

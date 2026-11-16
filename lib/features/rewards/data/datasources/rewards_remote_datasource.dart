@@ -16,11 +16,20 @@ class RewardsRemoteDataSourceImpl implements RewardsRemoteDataSource {
   @override
   Future<List<RewardModel>> getActiveRewards() async {
     try {
-      final response = await _apiClient.get(AppConstants.rewardsCatalogEndpoint);
-      final data = response.data as List<dynamic>? ?? [];
-      return data
-          .map((e) => RewardModel.fromJson(e as Map<String, dynamic>))
-          .toList();
+      const pageSize = 100;
+      final catalog = <String, RewardModel>{};
+      for (var page = 1; ; page++) {
+        final response = await _apiClient.get(
+          AppConstants.rewardsCatalogEndpoint,
+          queryParameters: {'page': page, 'limit': pageSize},
+        );
+        final data = response.data as List<dynamic>? ?? [];
+        for (final item in data) {
+          final reward = RewardModel.fromJson(item as Map<String, dynamic>);
+          catalog[reward.id] = reward;
+        }
+        if (data.length < pageSize) return catalog.values.toList();
+      }
     } on DioException catch (e) {
       throw ApiClient.handleDioError(e);
     }

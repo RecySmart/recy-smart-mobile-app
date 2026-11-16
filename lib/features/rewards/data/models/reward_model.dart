@@ -11,6 +11,7 @@ class RewardModel extends Reward {
     required super.costInPoints,
     required super.remainingStock,
     required super.status,
+    super.availabilityStatus,
     super.expiresAt,
     super.category,
   });
@@ -27,6 +28,7 @@ class RewardModel extends Reward {
       costInPoints: (json['costInPoints'] as num).toInt(),
       remainingStock: (json['remainingStock'] as num?)?.toInt() ?? 0,
       status: json['status'] as String? ?? 'ACTIVE',
+      availabilityStatus: json['availabilityStatus'] as String?,
       expiresAt: json['expiresAt'] as String?,
       category: _inferCategory(json['title'] as String),
     );

@@ -14,8 +14,10 @@ import 'package:recysmart/features/recycling/domain/usecases/start_session_useca
 import 'package:recysmart/features/recycling/presentation/bloc/recycling_bloc.dart';
 
 class MockStartSessionUseCase extends Mock implements StartSessionUseCase {}
+class MockStartManualSessionUseCase extends Mock implements StartManualSessionUseCase {}
 class MockEndSessionUseCase extends Mock implements EndSessionUseCase {}
 class MockGetSessionStatusUseCase extends Mock implements GetSessionStatusUseCase {}
+class MockGetActiveSessionUseCase extends Mock implements GetActiveSessionUseCase {}
 class MockStorageService extends Mock implements StorageService {}
 class MockLocationService extends Mock implements LocationService {}
 class MockPosition extends Mock implements Position {}
@@ -31,8 +33,10 @@ class TestHomeBloc extends HomeBloc {
 
 void main() {
   late MockStartSessionUseCase start;
+  late MockStartManualSessionUseCase startManual;
   late MockEndSessionUseCase end;
   late MockGetSessionStatusUseCase status;
+  late MockGetActiveSessionUseCase active;
   late MockStorageService storage;
   late MockLocationService location;
   late MockSocketService socket;
@@ -41,8 +45,10 @@ void main() {
 
   setUp(() {
     start = MockStartSessionUseCase();
+    startManual = MockStartManualSessionUseCase();
     end = MockEndSessionUseCase();
     status = MockGetSessionStatusUseCase();
+    active = MockGetActiveSessionUseCase();
     storage = MockStorageService();
     location = MockLocationService();
     socket = MockSocketService();
@@ -50,6 +56,9 @@ void main() {
 
     when(() => storage.read(key: any(named: 'key')))
         .thenAnswer((_) async => 'user-1');
+    when(() => active()).thenAnswer((_) async => const Right(null));
+    when(() => storage.read(key: AppConstants.activeRecyclingSessionKey))
+        .thenAnswer((_) async => null);
     when(() => storage.write(key: any(named: 'key'), value: any(named: 'value')))
         .thenAnswer((_) async {});
     when(() => storage.delete(key: any(named: 'key')))
@@ -62,6 +71,7 @@ void main() {
           onSessionUpdate: any(named: 'onSessionUpdate'),
           onPointsUpdate: any(named: 'onPointsUpdate'),
           onAchievementUnlocked: any(named: 'onAchievementUnlocked'),
+          onReconnected: any(named: 'onReconnected'),
         )).thenAnswer((_) async {});
     when(() => start(
           userId: any(named: 'userId'),
@@ -77,8 +87,10 @@ void main() {
 
     bloc = RecyclingBloc(
       startSession: start,
+      startManualSession: startManual,
       endSession: end,
       getSessionStatus: status,
+      getActiveSession: active,
       homeBloc: home,
       socketService: socket,
       storage: storage,
@@ -98,6 +110,44 @@ void main() {
     ));
     await active;
   }
+
+  test('manual code uses device coordinates and the server session timer', () async {
+    final position = MockPosition();
+    when(() => position.latitude).thenReturn(-12.04);
+    when(() => position.longitude).thenReturn(-77.02);
+    when(() => location.getCurrentPosition()).thenAnswer((_) async => position);
+    when(() => startManual(
+      qrToken: 'recysmart-code', latitude: -12.04, longitude: -77.02,
+    )).thenAnswer((_) async => const Right(RecyclingSession(
+      sessionId: 'manual-session', binId: 'manual-bin',
+      locationName: 'Punto manual', timeoutSeconds: 180,
+    )));
+    final ready = bloc.stream.firstWhere((state) => state is RecyclingSessionActive);
+
+    bloc.add(const RecyclingManualCodeSubmitted(' recysmart-code '));
+    bloc.add(const RecyclingManualCodeSubmitted(' recysmart-code '));
+
+    final state = (await ready) as RecyclingSessionActive;
+    expect(state.session.sessionId, 'manual-session');
+    expect(state.session.binId, 'manual-bin');
+    expect(state.timerSeconds, 180);
+    verify(() => startManual(
+      qrToken: 'recysmart-code', latitude: -12.04, longitude: -77.02,
+    )).called(1);
+  });
+
+  test('manual entry reports a location failure in the form', () async {
+    when(() => location.getCurrentPosition())
+        .thenThrow(Exception('Los permisos de ubicación fueron denegados.'));
+    final rejected = bloc.stream.firstWhere((state) => state is RecyclingManualStartFailed);
+    bloc.add(const RecyclingManualCodeSubmitted('recysmart-code'));
+    expect((await rejected as RecyclingManualStartFailed).message,
+      'Los permisos de ubicación fueron denegados.');
+    verifyNever(() => startManual(
+      qrToken: any(named: 'qrToken'), latitude: any(named: 'latitude'),
+      longitude: any(named: 'longitude'),
+    ));
+  });
 
   test('demo session sends QR coordinates, not device coordinates', () async {
     await startDemoSession();
@@ -208,6 +258,118 @@ void main() {
     expect(state.session.bottlesDropped, 2);
     expect(state.session.pointsEarned, 20);
     verify(() => status('session-1')).called(1);
+  });
+
+  test('recovers server session without a saved reference or a new start', () async {
+    when(() => active()).thenAnswer((_) async => const Right(
+      RecyclingSessionSnapshot(
+        sessionId: 'session-remote',
+        smartBinId: 'bin-remote',
+        locationName: 'Punto recuperado',
+        status: 'IN_PROGRESS',
+        bottlesAccepted: 3,
+        pointsCalculated: 30,
+        remainingSeconds: 42,
+      ),
+    ));
+    final restored = bloc.stream.firstWhere((s) => s is RecyclingSessionActive);
+    bloc.add(const RecyclingRestoreSessionEvent('user-1', openScanner: true));
+
+    final state = (await restored) as RecyclingSessionActive;
+    expect(state.session.sessionId, 'session-remote');
+    expect(state.session.locationName, 'Punto recuperado');
+    expect(state.session.bottlesDropped, 3);
+    expect(state.timerSeconds, 42);
+    verifyNever(() => start(
+      userId: any(named: 'userId'),
+      smartBinId: any(named: 'smartBinId'),
+      qrToken: any(named: 'qrToken'),
+      latitude: any(named: 'latitude'),
+      longitude: any(named: 'longitude'),
+    ));
+  });
+
+  test('opens the scanner after clearing a confirmed stale reference', () async {
+    when(() => storage.read(key: AppConstants.activeRecyclingSessionKey))
+        .thenAnswer((_) async => '{"userId":"user-1","sessionId":"stale-id"}');
+    when(() => status('stale-id'))
+        .thenAnswer((_) async => const Left(NotFoundFailure('missing')));
+    final ready = bloc.stream.firstWhere((s) => s is RecyclingReadyToScan);
+
+    bloc.add(const RecyclingRestoreSessionEvent('user-1', openScanner: true));
+    await ready;
+
+    verify(() => storage.delete(key: AppConstants.activeRecyclingSessionKey))
+        .called(1);
+  });
+
+  test('recognizes EXPIRED after opening the app again', () async {
+    when(() => storage.read(key: AppConstants.activeRecyclingSessionKey))
+        .thenAnswer((_) async => '{"userId":"user-1","sessionId":"expired-id"}');
+    when(() => status('expired-id')).thenAnswer((_) async => const Right(
+      RecyclingSessionSnapshot(
+        sessionId: 'expired-id',
+        smartBinId: 'bin-1',
+        status: 'EXPIRED',
+        bottlesAccepted: 2,
+        pointsCalculated: 20,
+      ),
+    ));
+    final closed = bloc.stream.firstWhere((s) => s is RecyclingSessionCompleted);
+    bloc.add(const RecyclingRestoreSessionEvent('user-1'));
+
+    final state = (await closed) as RecyclingSessionCompleted;
+    expect(state.autoClosed, isTrue);
+    expect(state.session.sessionId, 'expired-id');
+    expect(state.session.bottlesDropped, 2);
+    verify(() => storage.delete(key: AppConstants.activeRecyclingSessionKey))
+        .called(1);
+  });
+
+  test('keeps the scan intent and cached reference after a network failure', () async {
+    when(() => active()).thenAnswer((_) async => const Left(NetworkFailure('offline')));
+    final pending = bloc.stream.firstWhere((s) => s is RecyclingRecoveryPending);
+    bloc.add(const RecyclingRestoreSessionEvent('user-1', openScanner: true));
+
+    expect(((await pending) as RecyclingRecoveryPending).openScanner, isTrue);
+    verifyNever(() => storage.delete(key: AppConstants.activeRecyclingSessionKey));
+
+    when(() => active()).thenAnswer((_) async => const Right(null));
+    final ready = bloc.stream.firstWhere((s) => s is RecyclingReadyToScan);
+    bloc.add(const RecyclingRestoreSessionEvent('user-1', openScanner: true));
+    await ready;
+  });
+
+  test('socket reconnect recognizes a session closed on the server', () async {
+    await startDemoSession();
+    final onReconnect = verify(() => socket.connect(
+      sessionId: 'session-1',
+      userId: 'user-1',
+      onSessionUpdate: any(named: 'onSessionUpdate'),
+      onPointsUpdate: any(named: 'onPointsUpdate'),
+      onAchievementUnlocked: any(named: 'onAchievementUnlocked'),
+      onReconnected: captureAny(named: 'onReconnected'),
+    )).captured.single as void Function();
+    when(() => status('session-1')).thenAnswer((_) async => const Right(
+      RecyclingSessionSnapshot(
+        sessionId: 'session-1',
+        smartBinId: 'bin-1',
+        status: 'COMPLETED',
+        bottlesAccepted: 2,
+        pointsCalculated: 20,
+      ),
+    ));
+    final closed = bloc.stream.firstWhere((s) => s is RecyclingSessionCompleted);
+
+    onReconnect();
+
+    final state = (await closed) as RecyclingSessionCompleted;
+    expect(state.session.sessionId, 'session-1');
+    expect(state.session.bottlesDropped, 2);
+    expect(state.autoClosed, isFalse);
+    verifyNever(() => end(any()));
+    verify(() => storage.delete(key: AppConstants.activeRecyclingSessionKey))
+        .called(1);
   });
 
   test('keeps recovery token when status query fails', () async {
